@@ -1,0 +1,400 @@
+<div id="day2" class="day-content">
+    <h2>📘 Day 2: Resource Design & URL Patterns</h2>
+
+    <div class="objectives">
+        <h3>🎯 Learning Objectives</h3>
+        <ul>
+            <li>Design intuitive and consistent URL structures</li>
+            <li>Implement nested resources and relationships</li>
+            <li>Use query parameters for filtering, sorting, and pagination</li>
+            <li>Apply REST naming conventions and best practices</li>
+            <li>Handle collection vs. singleton resources</li>
+        </ul>
+    </div>
+
+    <h3>📚 Core Concepts</h3>
+
+    <div class="concept-grid">
+        <div class="concept-card">
+            <h4>📁 Resource Naming</h4>
+            <p>Use plural nouns for collections (/users, /products). Keep URLs lowercase with hyphens for multi-word resources (/order-items).</p>
+        </div>
+        <div class="concept-card">
+            <h4>🔗 Nested Resources</h4>
+            <p>Express relationships through URL hierarchy: /users/123/orders shows orders belonging to user 123.</p>
+        </div>
+        <div class="concept-card">
+            <h4>🔍 Query Parameters</h4>
+            <p>Use for filtering (?status=active), sorting (?sort=name), and pagination (?page=2&limit=10).</p>
+        </div>
+        <div class="concept-card">
+            <h4>📊 HATEOAS</h4>
+            <p>Include links in responses to guide clients to related resources and available actions.</p>
+        </div>
+    </div>
+
+    <h3>🔧 URL Pattern Best Practices</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>❌ Bad</th>
+                <th>✅ Good</th>
+                <th>Why</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>/getUsers</code></td>
+                <td><code>/users</code></td>
+                <td>HTTP method indicates action</td>
+            </tr>
+            <tr>
+                <td><code>/user/123</code></td>
+                <td><code>/users/123</code></td>
+                <td>Use plural consistently</td>
+            </tr>
+            <tr>
+                <td><code>/users/123/getOrders</code></td>
+                <td><code>/users/123/orders</code></td>
+                <td>No verbs in URLs</td>
+            </tr>
+            <tr>
+                <td><code>/Users_List</code></td>
+                <td><code>/users</code></td>
+                <td>Lowercase, no underscores</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>💻 Code Examples</h3>
+
+    <h4>1. Nested Resources</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Nested Routes</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d2-1')">Copy</button>
+        </div>
+        <pre><code id="code-d2-1">const express = require('express');
+const app = express();
+app.use(express.json());
+
+// Sample data with relationships
+let users = [
+    { id: 1, name: 'Alice', email: 'alice@example.com' },
+    { id: 2, name: 'Bob', email: 'bob@example.com' }
+];
+
+let orders = [
+    { id: 1, userId: 1, product: 'Laptop', total: 999.99, status: 'shipped' },
+    { id: 2, userId: 1, product: 'Mouse', total: 29.99, status: 'delivered' },
+    { id: 3, userId: 2, product: 'Keyboard', total: 79.99, status: 'pending' }
+];
+
+// GET all users
+app.get('/api/users', (req, res) => {
+    res.json(users);
+});
+
+// GET single user
+app.get('/api/users/:userId', (req, res) => {
+    const user = users.find(u => u.id === parseInt(req.params.userId));
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+});
+
+// GET all orders for a specific user (nested resource)
+app.get('/api/users/:userId/orders', (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const user = users.find(u => u.id === userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const userOrders = orders.filter(o => o.userId === userId);
+    res.json(userOrders);
+});
+
+// GET specific order for a user
+app.get('/api/users/:userId/orders/:orderId', (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const orderId = parseInt(req.params.orderId);
+
+    const order = orders.find(o => o.id === orderId && o.userId === userId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    res.json(order);
+});
+
+// POST create new order for user
+app.post('/api/users/:userId/orders', (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const user = users.find(u => u.id === userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const newOrder = {
+        id: orders.length + 1,
+        userId: userId,
+        product: req.body.product,
+        total: req.body.total,
+        status: 'pending'
+    };
+    orders.push(newOrder);
+    res.status(201).json(newOrder);
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));
+</code></pre>
+    </div>
+
+    <h4>2. Query Parameters: Filtering, Sorting, Pagination</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Query Parameters</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d2-2')">Copy</button>
+        </div>
+        <pre><code id="code-d2-2">const express = require('express');
+const app = express();
+
+// Sample products data
+let products = [
+    { id: 1, name: 'Laptop', price: 999, category: 'electronics', inStock: true },
+    { id: 2, name: 'Coffee Mug', price: 15, category: 'kitchen', inStock: true },
+    { id: 3, name: 'Headphones', price: 199, category: 'electronics', inStock: false },
+    { id: 4, name: 'Desk Lamp', price: 45, category: 'office', inStock: true },
+    { id: 5, name: 'Notebook', price: 8, category: 'office', inStock: true }
+];
+
+// GET /api/products with filtering, sorting, and pagination
+app.get('/api/products', (req, res) => {
+    let result = [...products];
+
+    // FILTERING: ?category=electronics&inStock=true
+    if (req.query.category) {
+        result = result.filter(p => p.category === req.query.category);
+    }
+    if (req.query.inStock !== undefined) {
+        const inStock = req.query.inStock === 'true';
+        result = result.filter(p => p.inStock === inStock);
+    }
+    if (req.query.minPrice) {
+        result = result.filter(p => p.price >= parseFloat(req.query.minPrice));
+    }
+    if (req.query.maxPrice) {
+        result = result.filter(p => p.price <= parseFloat(req.query.maxPrice));
+    }
+
+    // SORTING: ?sort=price&order=desc
+    if (req.query.sort) {
+        const sortField = req.query.sort;
+        const sortOrder = req.query.order === 'desc' ? -1 : 1;
+        result.sort((a, b) => {
+            if (a[sortField] < b[sortField]) return -1 * sortOrder;
+            if (a[sortField] > b[sortField]) return 1 * sortOrder;
+            return 0;
+        });
+    }
+
+    // PAGINATION: ?page=1&limit=10
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+
+    const paginatedResult = result.slice(startIndex, endIndex);
+
+    // Response with metadata
+    res.json({
+        data: paginatedResult,
+        pagination: {
+            currentPage: page,
+            itemsPerPage: limit,
+            totalItems: result.length,
+            totalPages: Math.ceil(result.length / limit),
+            hasNextPage: endIndex < result.length,
+            hasPrevPage: page > 1
+        }
+    });
+});
+
+app.listen(3000, () => console.log('Server running'));
+
+// Example queries:
+// GET /api/products?category=electronics
+// GET /api/products?minPrice=50&maxPrice=500
+// GET /api/products?sort=price&order=desc
+// GET /api/products?page=1&limit=2
+</code></pre>
+    </div>
+
+    <div class="storage-demo">
+        <h4>💾 localStorage Practical: Query Builder</h4>
+        <p>Build and save your favorite API query combinations:</p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Query Builder Storage</span>
+                <button class="copy-btn" onclick="copyCode(this, 'storage-d2')">Copy</button>
+            </div>
+            <pre><code id="storage-d2">// Query Builder - Save your favorite queries
+const QUERIES_KEY = 'day2_saved_queries';
+
+// Save a query configuration
+function saveQuery(name, params) {
+    const queries = JSON.parse(localStorage.getItem(QUERIES_KEY)) || {};
+    queries[name] = {
+        params,
+        createdAt: new Date().toISOString(),
+        usageCount: 0
+    };
+    localStorage.setItem(QUERIES_KEY, JSON.stringify(queries));
+    console.log(`✅ Saved query: ${name}`);
+}
+
+// Get a saved query and build URL
+function getQuery(name, baseUrl = '/api/products') {
+    const queries = JSON.parse(localStorage.getItem(QUERIES_KEY)) || {};
+    if (!queries[name]) {
+        console.log(`❌ Query "${name}" not found`);
+        return null;
+    }
+    queries[name].usageCount++;
+    localStorage.setItem(QUERIES_KEY, JSON.stringify(queries));
+
+    const queryString = new URLSearchParams(queries[name].params).toString();
+    return `${baseUrl}?${queryString}`;
+}
+
+// List all saved queries
+function listQueries() {
+    const queries = JSON.parse(localStorage.getItem(QUERIES_KEY)) || {};
+    console.table(Object.entries(queries).map(([name, data]) => ({
+        name,
+        params: JSON.stringify(data.params),
+        usageCount: data.usageCount
+    })));
+}
+
+// Usage:
+saveQuery('cheap-electronics', { category: 'electronics', maxPrice: 200, sort: 'price' });
+saveQuery('in-stock-office', { category: 'office', inStock: 'true' });
+console.log(getQuery('cheap-electronics')); // /api/products?category=electronics&maxPrice=200&sort=price
+listQueries();
+</code></pre>
+        </div>
+    </div>
+
+    <div class="exercise">
+        <h4>🏋️ Exercise: Build a Blog API with Nested Comments</h4>
+        <p><strong>Scenario:</strong> You're building a blog platform with posts and comments.</p>
+        <p><strong>Task:</strong> Create nested endpoints for posts and their comments.</p>
+        <p><strong>Requirements:</strong></p>
+        <ul>
+            <li>GET /api/posts - List all posts with filtering by author</li>
+            <li>GET /api/posts/:postId/comments - Get comments for a post</li>
+            <li>POST /api/posts/:postId/comments - Add comment to a post</li>
+        </ul>
+
+        <details>
+            <summary>💡 Hint</summary>
+            <p>Use <code>req.query.author</code> for filtering and <code>req.params.postId</code> for the nested relationship.</p>
+        </details>
+
+        <details>
+            <summary>✅ Solution</summary>
+            <div class="code-block">
+                <div class="code-header">
+                    <span>JavaScript - Blog API Solution</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'solution-d2')">Copy</button>
+                </div>
+                <pre><code id="solution-d2">const express = require('express');
+const app = express();
+app.use(express.json());
+
+let posts = [
+    { id: 1, title: 'Intro to REST', author: 'alice', content: 'REST basics...' },
+    { id: 2, title: 'Advanced APIs', author: 'bob', content: 'Advanced patterns...' }
+];
+
+let comments = [
+    { id: 1, postId: 1, author: 'bob', text: 'Great article!' },
+    { id: 2, postId: 1, author: 'charlie', text: 'Very helpful' }
+];
+
+// GET posts with optional author filter
+app.get('/api/posts', (req, res) => {
+    let result = [...posts];
+    if (req.query.author) {
+        result = result.filter(p => p.author === req.query.author);
+    }
+    res.json(result);
+});
+
+// GET comments for a post
+app.get('/api/posts/:postId/comments', (req, res) => {
+    const postId = parseInt(req.params.postId);
+    const post = posts.find(p => p.id === postId);
+    if (!post) return res.status(404).json({ error: 'Post not found' });
+
+    const postComments = comments.filter(c => c.postId === postId);
+    res.json(postComments);
+});
+
+// POST new comment
+app.post('/api/posts/:postId/comments', (req, res) => {
+    const postId = parseInt(req.params.postId);
+    const post = posts.find(p => p.id === postId);
+    if (!post) return res.status(404).json({ error: 'Post not found' });
+
+    const newComment = {
+        id: comments.length + 1,
+        postId: postId,
+        author: req.body.author,
+        text: req.body.text
+    };
+    comments.push(newComment);
+    res.status(201).json(newComment);
+});
+
+app.listen(3000);
+</code></pre>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz">
+        <h3>✅ Check Your Knowledge</h3>
+
+        <div class="quiz-question">
+            <p><strong>Q1:</strong> What's the correct URL to get all orders for user 42?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d2q1" value="a"> A) /api/orders?userId=42</label>
+                <label><input type="radio" name="d2q1" value="b"> B) /api/users/42/orders</label>
+                <label><input type="radio" name="d2q1" value="c"> C) /api/getOrdersByUser/42</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d2q1', 'b', 'd2q1-fb')">Check Answer</button>
+            <div class="feedback" id="d2q1-fb"></div>
+        </div>
+
+        <div class="quiz-question">
+            <p><strong>Q2:</strong> How should you implement pagination in a REST API?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d2q2" value="a"> A) POST /api/products/page/2</label>
+                <label><input type="radio" name="d2q2" value="b"> B) GET /api/products?page=2&limit=10</label>
+                <label><input type="radio" name="d2q2" value="c"> C) GET /api/products/paginate/2/10</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d2q2', 'b', 'd2q2-fb')">Check Answer</button>
+            <div class="feedback" id="d2q2-fb"></div>
+        </div>
+    </div>
+
+    <div class="takeaways">
+        <h3>🎯 Key Takeaways</h3>
+        <ul>
+            <li>Use plural nouns for resources (/users not /user)</li>
+            <li>Express relationships through URL hierarchy (/users/123/orders)</li>
+            <li>Use query parameters for filtering, sorting, and pagination</li>
+            <li>Keep URLs lowercase with hyphens, avoid verbs</li>
+        </ul>
+        <p><strong>Tomorrow:</strong> Request/Response handling - headers, content negotiation, and body parsing.</p>
+    </div>
+
+    <button class="complete-day" onclick="completeDay(2)">✓ Mark Day 2 Complete</button>
+</div>

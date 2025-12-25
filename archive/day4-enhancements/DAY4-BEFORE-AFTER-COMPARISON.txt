@@ -1,0 +1,450 @@
+================================================================================
+DAY 4 CODE BLOCKS - BEFORE/AFTER COMPARISON
+================================================================================
+
+BLOCK 1: JWT Authentication System (102 lines)
+================================================================================
+
+BEFORE (Original):
+────────────────────────────────────────────────────────────────────────────
+<pre><code id="code-d4-1">const express = require('express');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+
+const app = express();
+app.use(express.json());
+
+const JWT_SECRET = 'your-secret-key-change-in-production';
+const JWT_EXPIRES = '24h';
+
+// Simulated user database
+let users = [];
+
+// Register new user
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { email, password, role = 'user' } = req.body;
+
+        if (users.find(u => u.email === email)) {
+            return res.status(409).json({ error: 'Email already registered' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = {
+            id: users.length + 1,
+            email,
+            password: hashedPassword,
+            role
+        };
+        users.push(user);
+
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: user.role },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES }
+        );
+
+        res.status(201).json({
+            message: 'User registered successfully',
+            token,
+            user: { id: user.id, email: user.email, role: user.role }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Registration failed' });
+    }
+});
+...
+</code></pre>
+────────────────────────────────────────────────────────────────────────────
+
+AFTER (Enhanced - Simplified Version):
+────────────────────────────────────────────────────────────────────────────
+<pre><code id="code-d4-1-simple"
+          class="language-javascript"
+          data-type="authentication"
+          data-description="Essential JWT authentication with registration, login, and protected routes">
+const jwt = require('jsonwebtoken');         // JWT token generation/verification
+const bcrypt = require('bcryptjs');           // Password hashing library
+const JWT_SECRET = 'your-secret-key';         // Secret for signing tokens
+const JWT_EXPIRES = '24h';                    // Token validity period
+
+// Register: Hash password + create JWT
+app.post('/api/auth/register', async (req, res) => {
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    res.status(201).json({ message: 'Registered', token });
+});
+
+// Login: Verify credentials + issue JWT
+app.post('/api/auth/login', async (req, res) => {
+    const user = users.find(u => u.email === req.body.email);
+    if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    res.json({ message: 'Login successful', token });
+});
+
+// Middleware: Verify JWT from Authorization header
+const authenticate = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token provided' });
+    try {
+        req.user = jwt.verify(token, JWT_SECRET);    // Decode and verify
+        next();
+    } catch { res.status(401).json({ error: 'Invalid token' }); }
+};
+
+// Protected route - requires valid JWT
+app.get('/api/profile', authenticate, (req, res) => {
+    res.json({ message: 'Protected data', user: req.user });
+});
+</code></pre>
+────────────────────────────────────────────────────────────────────────────
+
+AFTER (Enhanced - Full Version):
+────────────────────────────────────────────────────────────────────────────
+<pre><code id="code-d4-1"
+          class="language-javascript"
+          data-type="authentication"
+          data-description="Complete JWT-based authentication with registration, login, middleware, and protected routes">
+const express = require('express');
+const jwt = require('jsonwebtoken');          // JWT token library
+const bcrypt = require('bcryptjs');           // Password hashing
+
+const app = express();
+app.use(express.json());
+
+// JWT configuration
+const JWT_SECRET = 'your-secret-key-change-in-production';  // CRITICAL: Use env variable in production
+const JWT_EXPIRES = '24h';                                  // Token valid for 24 hours
+
+// Simulated user database (use real DB in production)
+let users = [];
+
+// ========================================
+// REGISTRATION: Create new user account
+// ========================================
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { email, password, role = 'user' } = req.body;
+
+        // Check if email already exists
+        if (users.find(u => u.email === email)) {
+            return res.status(409).json({ error: 'Email already registered' });
+        }
+
+        // Hash password with bcrypt (10 rounds)
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Create user object
+        const user = {
+            id: users.length + 1,
+            email,
+            password: hashedPassword,      // Never store plain passwords!
+            role
+        };
+        users.push(user);
+
+        // Generate JWT token with user data
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: user.role },  // Payload
+            JWT_SECRET,                                             // Secret key
+            { expiresIn: JWT_EXPIRES }                             // Expiration
+        );
+
+        // Return success with token (exclude password)
+        res.status(201).json({
+            message: 'User registered successfully',
+            token,
+            user: { id: user.id, email: user.email, role: user.role }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Registration failed' });
+    }
+});
+...
+</code></pre>
+────────────────────────────────────────────────────────────────────────────
+
+
+================================================================================
+BLOCK 2: Role-Based Access Control (54 lines)
+================================================================================
+
+BEFORE (Original):
+────────────────────────────────────────────────────────────────────────────
+<pre><code id="code-d4-2">// Role-based authorization middleware
+const authorize = (...allowedRoles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        if (!allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: `Role '${req.user.role}' cannot access this resource`
+            });
+        }
+
+        next();
+    };
+};
+...
+</code></pre>
+────────────────────────────────────────────────────────────────────────────
+
+AFTER (Enhanced):
+────────────────────────────────────────────────────────────────────────────
+<pre><code id="code-d4-2"
+          class="language-javascript"
+          data-type="authorization"
+          data-description="Role-based authorization middleware with examples for admin-only, multi-role, and resource ownership access control">
+// ========================================
+// ROLE-BASED AUTHORIZATION MIDDLEWARE
+// Restricts access based on user roles
+// ========================================
+const authorize = (...allowedRoles) => {
+    return (req, res, next) => {
+        // Ensure user is authenticated
+        if (!req.user) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        // Check if user's role is allowed
+        if (!allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: `Role '${req.user.role}' cannot access this resource`
+            });
+        }
+
+        next();  // User has required role
+    };
+};
+
+// ========================================
+// USAGE EXAMPLES
+// ========================================
+
+// Example 1: Any authenticated user can access
+app.get('/api/dashboard', authenticate, (req, res) => {
+    res.json({ message: 'Dashboard data' });
+});
+
+// Example 2: Admin-only endpoint
+app.get('/api/admin/users', authenticate, authorize('admin'), (req, res) => {
+    // Only users with role='admin' can access
+    res.json({ users: users.map(u => ({ id: u.id, email: u.email, role: u.role })) });
+});
+...
+</code></pre>
+────────────────────────────────────────────────────────────────────────────
+
+
+================================================================================
+BLOCK 3: Token Manager - localStorage (64 lines)
+================================================================================
+
+BEFORE (Original):
+────────────────────────────────────────────────────────────────────────────
+<pre><code id="storage-d4">// Token Manager - Client-side JWT handling
+const TOKEN_KEY = 'day4_auth_token';
+const USER_KEY = 'day4_user_data';
+
+// Save token after login
+function saveAuth(token, user) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    console.log('✅ Auth saved for:', user.email);
+}
+
+// Get token for API requests
+function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+}
+...
+</code></pre>
+────────────────────────────────────────────────────────────────────────────
+
+AFTER (Enhanced):
+────────────────────────────────────────────────────────────────────────────
+<pre><code id="storage-d4"
+          class="language-javascript"
+          data-type="client-auth"
+          data-description="Client-side JWT token management with localStorage including save, retrieve, expiration check, and authenticated fetch">
+// ========================================
+// TOKEN MANAGER - Client-side JWT handling
+// ========================================
+const TOKEN_KEY = 'day4_auth_token';      // localStorage key for JWT
+const USER_KEY = 'day4_user_data';        // localStorage key for user info
+
+// Save authentication data after successful login
+function saveAuth(token, user) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    console.log('✅ Auth saved for:', user.email);
+}
+
+// Retrieve stored JWT token
+function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+}
+
+// Get current user information
+function getCurrentUser() {
+    const userData = localStorage.getItem(USER_KEY);
+    return userData ? JSON.parse(userData) : null;
+}
+
+// ========================================
+// JWT EXPIRATION CHECK
+// Decode JWT and check expiration without verification
+// ========================================
+function isTokenExpired() {
+    const token = getToken();
+    if (!token) return true;
+
+    try {
+        // JWT structure: header.payload.signature
+        // Decode payload (middle part)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+
+        // Check if exp (expiration) timestamp has passed
+        return payload.exp * 1000 < Date.now();  // exp is in seconds, Date.now() is ms
+    } catch {
+        return true;  // Invalid token format
+    }
+}
+...
+</code></pre>
+────────────────────────────────────────────────────────────────────────────
+
+
+================================================================================
+BLOCK 4: Protected Todo API Solution (55 lines)
+================================================================================
+
+BEFORE (Original):
+────────────────────────────────────────────────────────────────────────────
+<pre><code id="solution-d4">const express = require('express');
+const jwt = require('jsonwebtoken');
+const app = express();
+app.use(express.json());
+
+const SECRET = 'todo-secret';
+let users = [];
+let todos = [];
+
+const auth = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+    try {
+        req.user = jwt.verify(token, SECRET);
+        next();
+    } catch { res.status(401).json({ error: 'Invalid token' }); }
+};
+...
+</code></pre>
+────────────────────────────────────────────────────────────────────────────
+
+AFTER (Enhanced):
+────────────────────────────────────────────────────────────────────────────
+<pre><code id="solution-d4"
+          class="language-javascript"
+          data-type="exercise-solution"
+          data-description="Complete protected Todo API with user-scoped access - users can only view and create their own todos">
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const app = express();
+app.use(express.json());
+
+const SECRET = 'todo-secret';       // JWT secret key
+let users = [];                      // User database (in-memory)
+let todos = [];                      // Todo database (in-memory)
+
+// ========================================
+// AUTHENTICATION MIDDLEWARE
+// ========================================
+const auth = (req, res, next) => {
+    // Extract token from "Bearer <token>" format
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ error: 'No token' });
+    }
+
+    try {
+        // Verify token and attach user data to request
+        req.user = jwt.verify(token, SECRET);
+        next();
+    } catch {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+};
+
+// ========================================
+// USER REGISTRATION
+// ========================================
+app.post('/api/auth/register', (req, res) => {
+    const { email, password } = req.body;
+
+    // Check for duplicate email
+    if (users.find(u => u.email === email)) {
+        return res.status(409).json({ error: 'Email exists' });
+    }
+
+    // Create new user (NOTE: password should be hashed in production!)
+    const user = { id: users.length + 1, email, password };
+    users.push(user);
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user.id, email }, SECRET, { expiresIn: '1h' });
+
+    res.status(201).json({ token });
+});
+...
+</code></pre>
+────────────────────────────────────────────────────────────────────────────
+
+
+================================================================================
+KEY ENHANCEMENTS APPLIED
+================================================================================
+
+1. LANGUAGE CLASSES
+   ✓ All blocks: class="language-javascript"
+
+2. DATA ATTRIBUTES
+   ✓ data-type: Categorizes the code block
+   ✓ data-description: Detailed description for tooltips/accessibility
+
+3. INLINE COMMENTS
+   ✓ Section headers with visual separators (========)
+   ✓ Explanatory comments for complex logic
+   ✓ Inline comments for important operations
+
+4. SIMPLIFIED VERSION (Block 1 only - 15+ lines)
+   ✓ 102 lines reduced to 35 essential lines
+   ✓ Maintains complete learning flow
+   ✓ Separate code block for easy understanding
+
+5. STRUCTURE
+   ✓ Logical grouping with section markers
+   ✓ Consistent comment style
+   ✓ Professional code formatting
+
+================================================================================
+LINES AFFECTED IN ORIGINAL FILE
+================================================================================
+
+Block 1: Lines 1881-1988  (102 lines) → Split into Simplified (35) + Full (102)
+Block 2: Lines 1991-2050  (54 lines)  → Enhanced with comments
+Block 3: Lines 2055-2125  (64 lines)  → Enhanced with comments
+Block 4: Lines 2139-2200  (55 lines)  → Enhanced with comments
+
+Total original lines: ~320 lines
+Total enhanced lines: ~430 lines (includes simplified version)
+
+================================================================================

@@ -1,0 +1,552 @@
+<div id="day1" class="day-content active">
+    <h2>📘 Day 1: REST Fundamentals & HTTP Methods</h2>
+
+    <div class="objectives">
+        <h3>🎯 Learning Objectives</h3>
+        <ul>
+            <li>Understand what REST architecture is and its core principles</li>
+            <li>Master HTTP methods (GET, POST, PUT, PATCH, DELETE)</li>
+            <li>Learn proper URL/resource naming conventions</li>
+            <li>Set up your first Express.js server</li>
+            <li>Create your first RESTful endpoint</li>
+        </ul>
+    </div>
+
+    <h3>📚 Core Concepts</h3>
+
+    <div class="concept-grid">
+        <div class="concept-card">
+            <h4>🔄 What is REST?</h4>
+            <p>REST (Representational State Transfer) is an architectural style for designing networked applications. It uses HTTP requests to perform CRUD operations on resources.</p>
+        </div>
+        <div class="concept-card">
+            <h4>📦 Resources</h4>
+            <p>Everything in REST is a resource (users, products, orders). Resources are identified by URLs and manipulated using HTTP methods.</p>
+        </div>
+        <div class="concept-card">
+            <h4>🔀 Stateless</h4>
+            <p>Each request contains all information needed to process it. The server doesn't store client state between requests.</p>
+        </div>
+        <div class="concept-card">
+            <h4>📋 Uniform Interface</h4>
+            <p>REST uses standard HTTP methods consistently: GET (read), POST (create), PUT (replace), PATCH (update), DELETE (remove).</p>
+        </div>
+    </div>
+
+    <h3>🔧 HTTP Methods Deep Dive</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Method</th>
+                <th>Purpose</th>
+                <th>Idempotent</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>GET</code></td>
+                <td>Retrieve resource(s)</td>
+                <td>Yes</td>
+                <td>GET /api/users</td>
+            </tr>
+            <tr>
+                <td><code>POST</code></td>
+                <td>Create new resource</td>
+                <td>No</td>
+                <td>POST /api/users</td>
+            </tr>
+            <tr>
+                <td><code>PUT</code></td>
+                <td>Replace entire resource</td>
+                <td>Yes</td>
+                <td>PUT /api/users/123</td>
+            </tr>
+            <tr>
+                <td><code>PATCH</code></td>
+                <td>Partial update</td>
+                <td>Yes</td>
+                <td>PATCH /api/users/123</td>
+            </tr>
+            <tr>
+                <td><code>DELETE</code></td>
+                <td>Remove resource</td>
+                <td>Yes</td>
+                <td>DELETE /api/users/123</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="info-box">
+        <strong>💡 Idempotent</strong> means that making the same request multiple times produces the same result. GET, PUT, PATCH, and DELETE are idempotent. POST is not—calling it twice creates two resources.
+    </div>
+
+    <h3>💻 Code Examples</h3>
+
+    <h4>1. Setting Up Express.js</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Initial Express Setup</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d1-1')">Copy</button>
+        </div>
+        <pre><code id="code-d1-1">// First, initialize your project and install Express
+// Run in terminal: npm init -y && npm install express
+
+const express = require('express');
+const app = express();
+const PORT = 3000;
+
+// Middleware to parse JSON request bodies
+app.use(express.json());
+
+// Simple health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Start the server
+app.listen(PORT, () => {
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
+</code></pre>
+    </div>
+
+    <h4>2. Complete CRUD Endpoints</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Full CRUD Example</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d1-2')">Copy</button>
+        </div>
+        <pre><code id="code-d1-2">const express = require('express');
+const app = express();
+app.use(express.json());
+
+// In-memory data store (replace with database in production)
+let users = [
+    { id: 1, name: 'Alice Johnson', email: 'alice@example.com' },
+    { id: 2, name: 'Bob Smith', email: 'bob@example.com' }
+];
+let nextId = 3;
+
+// GET all users
+app.get('/api/users', (req, res) => {
+    res.json(users);
+});
+
+// GET single user by ID
+app.get('/api/users/:id', (req, res) => {
+    const user = users.find(u => u.id === parseInt(req.params.id));
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(user);
+});
+
+// POST create new user
+app.post('/api/users', (req, res) => {
+    const { name, email } = req.body;
+    if (!name || !email) {
+        return res.status(400).json({ error: 'Name and email are required' });
+    }
+    const newUser = { id: nextId++, name, email };
+    users.push(newUser);
+    res.status(201).json(newUser);
+});
+
+// PUT replace user entirely
+app.put('/api/users/:id', (req, res) => {
+    const index = users.findIndex(u => u.id === parseInt(req.params.id));
+    if (index === -1) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+    const { name, email } = req.body;
+    users[index] = { id: parseInt(req.params.id), name, email };
+    res.json(users[index]);
+});
+
+// PATCH partial update
+app.patch('/api/users/:id', (req, res) => {
+    const user = users.find(u => u.id === parseInt(req.params.id));
+    if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+    Object.assign(user, req.body);
+    res.json(user);
+});
+
+// DELETE user
+app.delete('/api/users/:id', (req, res) => {
+    const index = users.findIndex(u => u.id === parseInt(req.params.id));
+    if (index === -1) {
+        return res.status(404).json({ error: 'User not found' });
+    }
+    users.splice(index, 1);
+    res.status(204).send();
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));
+</code></pre>
+    </div>
+
+    <h4>3. Building an Actual API with Node.js HTTP Module</h4>
+    <p>Before using frameworks like Express, it's valuable to understand how Node.js creates HTTP servers using the core <code>http</code> module. This example demonstrates building a complete API from scratch with template rendering and routing.</p>
+
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Complete Node.js HTTP Server</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d1-3')">Copy</button>
+        </div>
+        <pre><code id="code-d1-3">const fs = require('fs');
+const http = require('http');
+const url = require('url');
+const slugify = require('slugify');
+
+// ============================================
+// 1. FILE READING (Synchronous - runs once at startup)
+// ============================================
+// Read HTML templates - these are placeholders that will be filled with data
+const tempOverview = fs.readFileSync(`${__dirname}/templates/template-overview.html`, 'utf-8');
+const tempCard = fs.readFileSync(`${__dirname}/templates/template-card.html`, 'utf-8');
+const tempProduct = fs.readFileSync(`${__dirname}/templates/template-product.html`, 'utf-8');
+
+// Read JSON data file - contains product information
+const data = fs.readFileSync(`${__dirname}/dev-data/data.json`, 'utf-8');
+const dataObj = JSON.parse(data);  // Parse JSON string into JavaScript object
+
+// Create URL slugs for SEO-friendly URLs (e.g., "Fresh Avocados" → "fresh-avocados")
+const slugs = dataObj.map(el => slugify(el.productName, { lower: true }));
+console.log(slugs);
+
+// ============================================
+// 2. TEMPLATE REPLACEMENT HELPER FUNCTION
+// ============================================
+const replaceTemplate = (temp, product) => {
+    // Use regex with /g flag to replace ALL occurrences, not just the first
+    let output = temp.replace(/{%PRODUCTNAME%}/g, product.productName);
+    output = output.replace(/{%IMAGE%}/g, product.image);
+    output = output.replace(/{%PRICE%}/g, product.price);
+    output = output.replace(/{%FROM%}/g, product.from);
+    output = output.replace(/{%NUTRIENTS%}/g, product.nutrients);
+    output = output.replace(/{%QUANTITY%}/g, product.quantity);
+    output = output.replace(/{%DESCRIPTION%}/g, product.description);
+    output = output.replace(/{%ID%}/g, product.id);
+
+    // Conditional rendering: add 'not-organic' class if product is not organic
+    if (!product.organic) output = output.replace(/{%NOT_ORGANIC%}/g, 'not-organic');
+    return output;
+};
+
+// ============================================
+// 3. HTTP SERVER CREATION
+// ============================================
+const server = http.createServer((req, res) => {
+    // Parse the request URL to extract pathname and query parameters
+    const { query, pathname } = url.parse(req.url, true);  // true = parse query string
+
+    // ============================================
+    // 4. ROUTING LOGIC
+    // ============================================
+
+    // Route: Overview/Home Page
+    if (pathname === '/' || pathname === '/overview') {
+        res.writeHead(200, { 'Content-type': 'text/html' });
+
+        // Generate HTML cards for each product using map
+        const cardsHtml = dataObj.map(el => replaceTemplate(tempCard, el)).join('');
+        // Insert all cards into the overview template
+        const output = tempOverview.replace('{%PRODUCT_CARDS%}', cardsHtml);
+
+        res.end(output);
+    }
+
+    // Route: Individual Product Page (with dynamic ID from query string)
+    else if (pathname === '/product') {
+        res.writeHead(200, { 'Content-type': 'text/html' });
+
+        // Get the product by ID from query parameter (?id=0)
+        const product = dataObj[query.id];
+        const output = replaceTemplate(tempProduct, product);
+
+        res.end(output);
+    }
+
+    // Route: API Endpoint (returns raw JSON data)
+    else if (pathname === '/api') {
+        res.writeHead(200, { 'Content-type': 'application/json' });
+        res.end(data);  // Send the raw JSON string
+    }
+
+    // Route: 404 Not Found
+    else {
+        res.writeHead(404, {
+            'Content-type': 'text/html',
+            'my-own-header': 'hello-world'  // Custom headers can be added
+        });
+        res.end('&lt;h1&gt;Page not found!&lt;/h1&gt;');
+    }
+});
+
+// Start server on port 8000
+server.listen(8000, '127.0.0.1', () => {
+    console.log('Listening to requests on port 8000');
+});
+</code></pre>
+    </div>
+
+    <div class="info-box">
+        <h4>📖 Code Explanation: Grammar & Syntax Breakdown</h4>
+
+        <p><strong>1. Template Literals with <code>${}</code>:</strong></p>
+        <ul>
+            <li><code>`${__dirname}/templates/file.html`</code> - Backticks allow embedded expressions</li>
+            <li><code>__dirname</code> - Node.js global variable for current directory path</li>
+            <li>More readable than string concatenation: <code>__dirname + '/templates/file.html'</code></li>
+        </ul>
+
+        <p><strong>2. Destructuring Assignment:</strong></p>
+        <ul>
+            <li><code>const { query, pathname } = url.parse(req.url, true)</code></li>
+            <li>Extracts specific properties from an object into variables</li>
+            <li>Equivalent to: <code>const query = parsed.query; const pathname = parsed.pathname;</code></li>
+        </ul>
+
+        <p><strong>3. Arrow Functions:</strong></p>
+        <ul>
+            <li><code>(req, res) => { ... }</code> - Concise function syntax</li>
+            <li>Shorter than: <code>function(req, res) { ... }</code></li>
+            <li>Automatically binds <code>this</code> context (not relevant here, but important in other cases)</li>
+        </ul>
+
+        <p><strong>4. Regex Global Flag <code>/g</code>:</strong></p>
+        <ul>
+            <li><code>/{%PRODUCTNAME%}/g</code> - The <code>g</code> flag replaces ALL matches</li>
+            <li>Without <code>g</code>, only the first occurrence is replaced</li>
+            <li>Essential when a placeholder appears multiple times in a template</li>
+        </ul>
+
+        <p><strong>5. Ternary Operator (implied):</strong></p>
+        <ul>
+            <li><code>if (!product.organic)</code> - Checks if organic property is false</li>
+            <li>Could be written as ternary: <code>product.organic ? '' : 'not-organic'</code></li>
+        </ul>
+    </div>
+
+    <div class="info-box warning">
+        <h4>✅ Dos and ❌ Don'ts</h4>
+
+        <p><strong>✅ DO:</strong></p>
+        <ul>
+            <li><strong>Read files synchronously at startup:</strong> <code>fs.readFileSync()</code> is acceptable for loading templates/config during initialization before the server starts handling requests</li>
+            <li><strong>Set proper Content-Type headers:</strong> <code>'text/html'</code> for HTML, <code>'application/json'</code> for JSON</li>
+            <li><strong>Use HTTP status codes correctly:</strong> 200 for success, 404 for not found</li>
+            <li><strong>Parse URLs properly:</strong> Use <code>url.parse()</code> to extract pathname and query parameters</li>
+            <li><strong>Create slugs for SEO:</strong> Convert "Fresh Avocados" to "fresh-avocados" for clean URLs</li>
+            <li><strong>Validate user input:</strong> Check if <code>query.id</code> exists and is valid before using it</li>
+        </ul>
+
+        <p><strong>❌ DON'T:</strong></p>
+        <ul>
+            <li><strong>Use synchronous file operations inside request handlers:</strong> <code>fs.readFileSync()</code> blocks the entire server - use <code>fs.readFile()</code> (async) or read once at startup</li>
+            <li><strong>Forget error handling:</strong> This example doesn't handle missing files or invalid product IDs (production code needs try-catch blocks)</li>
+            <li><strong>Skip input validation:</strong> Always validate <code>query.id</code> to prevent accessing <code>dataObj[undefined]</code></li>
+            <li><strong>Hardcode file paths:</strong> Use <code>__dirname</code> to make paths relative to the script location</li>
+            <li><strong>Forget to set Content-Type:</strong> Browsers need this header to render content correctly</li>
+            <li><strong>Use GET for state-changing operations:</strong> GET should only retrieve data, not modify it</li>
+        </ul>
+    </div>
+
+    <div class="info-box">
+        <h4>🔍 Key Learning Points</h4>
+        <ul>
+            <li><strong>File I/O Timing:</strong> Read templates once at startup (synchronous is OK), not on every request</li>
+            <li><strong>Routing Pattern:</strong> Use if-else blocks to check pathname and route to appropriate handler</li>
+            <li><strong>Template System:</strong> Simple string replacement works for basic needs; frameworks provide more power</li>
+            <li><strong>Separation of Concerns:</strong> Helper functions (<code>replaceTemplate</code>) keep code organized</li>
+            <li><strong>HTTP Fundamentals:</strong> Understanding <code>http.createServer()</code> helps appreciate what Express.js abstracts</li>
+        </ul>
+    </div>
+
+    <div class="storage-demo">
+        <h4>💾 localStorage Practical: API Request Logger</h4>
+        <p>Track your API learning progress by logging requests you've tested:</p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - localStorage API Logger</span>
+                <button class="copy-btn" onclick="copyCode(this, 'storage-d1')">Copy</button>
+            </div>
+            <pre><code id="storage-d1">// API Request Logger - Save your practice session
+const API_LOG_KEY = 'day1_api_requests_log';
+
+// Log a new API request you've tested
+function logRequest(method, endpoint, statusCode) {
+    const logs = JSON.parse(localStorage.getItem(API_LOG_KEY)) || [];
+    logs.push({
+        method,
+        endpoint,
+        statusCode,
+        timestamp: new Date().toISOString()
+    });
+    localStorage.setItem(API_LOG_KEY, JSON.stringify(logs));
+    console.log(`✅ Logged: ${method} ${endpoint} → ${statusCode}`);
+}
+
+// View all logged requests
+function viewLogs() {
+    const logs = JSON.parse(localStorage.getItem(API_LOG_KEY)) || [];
+    console.table(logs);
+    return logs;
+}
+
+// Get summary stats
+function getStats() {
+    const logs = JSON.parse(localStorage.getItem(API_LOG_KEY)) || [];
+    const stats = {
+        total: logs.length,
+        byMethod: {}
+    };
+    logs.forEach(log => {
+        stats.byMethod[log.method] = (stats.byMethod[log.method] || 0) + 1;
+    });
+    return stats;
+}
+
+// Clear all logs
+function clearLogs() {
+    localStorage.removeItem(API_LOG_KEY);
+    console.log('🗑️ Logs cleared');
+}
+
+// Usage examples:
+logRequest('GET', '/api/users', 200);
+logRequest('POST', '/api/users', 201);
+logRequest('DELETE', '/api/users/1', 204);
+console.log('Stats:', getStats());
+</code></pre>
+        </div>
+    </div>
+
+    <div class="exercise">
+        <h4>🏋️ Exercise: Build a Products API</h4>
+        <p><strong>Scenario:</strong> You're building an e-commerce backend and need a Products API.</p>
+        <p><strong>Task:</strong> Create CRUD endpoints for managing products.</p>
+        <p><strong>Requirements:</strong></p>
+        <ul>
+            <li>Each product has: id, name, price, category</li>
+            <li>GET /api/products - List all products</li>
+            <li>POST /api/products - Create a new product</li>
+            <li>GET /api/products/:id - Get single product</li>
+        </ul>
+
+        <details>
+            <summary>💡 Hint</summary>
+            <p>Start with an array of sample products. Use <code>req.params.id</code> to access URL parameters and <code>req.body</code> to access POST data.</p>
+        </details>
+
+        <details>
+            <summary>✅ Solution</summary>
+            <div class="code-block">
+                <div class="code-header">
+                    <span>JavaScript - Products API Solution</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'solution-d1')">Copy</button>
+                </div>
+                <pre><code id="solution-d1">const express = require('express');
+const app = express();
+app.use(express.json());
+
+let products = [
+    { id: 1, name: 'Laptop', price: 999.99, category: 'Electronics' },
+    { id: 2, name: 'Coffee Mug', price: 12.99, category: 'Kitchen' }
+];
+let nextId = 3;
+
+// GET all products
+app.get('/api/products', (req, res) => {
+    res.json(products);
+});
+
+// GET single product
+app.get('/api/products/:id', (req, res) => {
+    const product = products.find(p => p.id === parseInt(req.params.id));
+    if (!product) {
+        return res.status(404).json({ error: 'Product not found' });
+    }
+    res.json(product);
+});
+
+// POST create product
+app.post('/api/products', (req, res) => {
+    const { name, price, category } = req.body;
+    if (!name || !price) {
+        return res.status(400).json({ error: 'Name and price required' });
+    }
+    const newProduct = {
+        id: nextId++,
+        name,
+        price: parseFloat(price),
+        category: category || 'Uncategorized'
+    };
+    products.push(newProduct);
+    res.status(201).json(newProduct);
+});
+
+app.listen(3000, () => console.log('Products API running'));
+</code></pre>
+            </div>
+            <p><strong>Explanation:</strong> We use an in-memory array to store products. The <code>parseInt()</code> converts the URL parameter string to a number for comparison. Status 201 indicates successful resource creation.</p>
+        </details>
+    </div>
+
+    <div class="quiz">
+        <h3>✅ Check Your Knowledge</h3>
+
+        <div class="quiz-question">
+            <p><strong>Q1:</strong> Which HTTP method should you use to update only the email field of a user?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d1q1" value="a"> A) PUT</label>
+                <label><input type="radio" name="d1q1" value="b"> B) PATCH</label>
+                <label><input type="radio" name="d1q1" value="c"> C) POST</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d1q1', 'b', 'd1q1-fb')">Check Answer</button>
+            <div class="feedback" id="d1q1-fb"></div>
+        </div>
+
+        <div class="quiz-question">
+            <p><strong>Q2:</strong> What status code should a successful DELETE request return?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d1q2" value="a"> A) 200 OK</label>
+                <label><input type="radio" name="d1q2" value="b"> B) 201 Created</label>
+                <label><input type="radio" name="d1q2" value="c"> C) 204 No Content</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d1q2', 'c', 'd1q2-fb')">Check Answer</button>
+            <div class="feedback" id="d1q2-fb"></div>
+        </div>
+
+        <div class="quiz-question">
+            <p><strong>Q3:</strong> Which HTTP method is NOT idempotent?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d1q3" value="a"> A) GET</label>
+                <label><input type="radio" name="d1q3" value="b"> B) POST</label>
+                <label><input type="radio" name="d1q3" value="c"> C) PUT</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d1q3', 'b', 'd1q3-fb')">Check Answer</button>
+            <div class="feedback" id="d1q3-fb"></div>
+        </div>
+    </div>
+
+    <div class="takeaways">
+        <h3>🎯 Key Takeaways</h3>
+        <ul>
+            <li>REST uses HTTP methods to perform CRUD operations on resources</li>
+            <li>Resources are identified by URLs (e.g., /api/users/123)</li>
+            <li>Use proper HTTP methods: GET (read), POST (create), PUT/PATCH (update), DELETE (remove)</li>
+            <li>Status codes communicate the result: 200 (OK), 201 (Created), 204 (No Content), 404 (Not Found)</li>
+        </ul>
+        <p><strong>Tomorrow:</strong> We'll dive into proper resource design and URL patterns for complex APIs.</p>
+    </div>
+
+    <button class="complete-day" onclick="completeDay(1)">✓ Mark Day 1 Complete</button>
+</div>

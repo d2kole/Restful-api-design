@@ -1,0 +1,114 @@
+/* ========================================
+   THEME CUSTOMIZATIONS
+   Additional Theme-Specific Overrides and
+   Future Theme Extensions
+   ======================================== */
+
+/*
+ * Note: Primary theme variables are defined in base.css
+ * This file contains additional theme customizations,
+ * component-specific overrides, and future theme extensions.
+ */
+
+/* ----------------------------------------
+   Dark Mode Component Overrides
+   ---------------------------------------- */
+
+/* Code header background in dark mode */
+body.dark-mode .code-header {
+    background-color: #0d1520;
+}
+
+/* Exercise box adjustments for dark mode */
+body.dark-mode .exercise {
+    background-color: rgba(255, 184, 28, 0.1);
+    border-color: var(--warning);
+}
+
+body.dark-mode .exercise h4 {
+    color: var(--warning);
+}
+
+/* Quiz feedback colors in dark mode */
+body.dark-mode .feedback.incorrect {
+    background-color: rgba(231, 76, 60, 0.15);
+}
+
+/* ----------------------------------------
+   Focus States (Accessibility)
+   ---------------------------------------- */
+.nav-item:focus,
+.theme-toggle:focus,
+.reset-btn:focus,
+.copy-btn:focus,
+.check-answer:focus,
+.complete-day:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+body.dark-mode .nav-item:focus,
+body.dark-mode .theme-toggle:focus,
+body.dark-mode .reset-btn:focus,
+body.dark-mode .copy-btn:focus,
+body.dark-mode .check-answer:focus,
+body.dark-mode .complete-day:focus {
+    outline-color: var(--warning);
+}
+
+/* ----------------------------------------
+   Print Styles
+   ---------------------------------------- */
+@media print {
+    .sidebar,
+    .theme-toggle,
+    .reset-btn,
+    .copy-btn,
+    .complete-day {
+        display: none !important;
+    }
+
+    .main {
+        margin-left: 0;
+        max-width: 100%;
+    }
+
+    .day-content {
+        display: block !important;
+        page-break-inside: avoid;
+    }
+
+    .code-block {
+        border: 1px solid #ccc;
+    }
+
+    pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+}
+
+/* ----------------------------------------
+   High Contrast Mode (Future Extension)
+   ---------------------------------------- */
+/*
+body.high-contrast {
+    --bg-primary: #000000;
+    --bg-secondary: #1a1a1a;
+    --text-primary: #ffffff;
+    --accent: #00ff00;
+}
+*/
+
+/* ----------------------------------------
+   Reduced Motion Preference
+   ---------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

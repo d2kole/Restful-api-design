@@ -1,0 +1,1009 @@
+<!-- ============================================================ -->
+<!-- DAY 7: ENHANCED CODE BLOCKS - RESTful API Design Module -->
+<!-- All code blocks enhanced with language classes, descriptions, -->
+<!-- data-types, inline comments, and simplified/full versions -->
+<!-- ============================================================ -->
+
+<!-- CODE BLOCK 1: OpenAPI/Swagger Documentation Setup -->
+<h4>1. OpenAPI/Swagger Documentation</h4>
+<div class="code-block">
+    <div class="code-header">
+        <span>JavaScript - Swagger Setup (npm install swagger-jsdoc swagger-ui-express)</span>
+        <button class="copy-btn" onclick="copyCode(this, 'code-d7-1-simple')">Copy</button>
+        <button class="toggle-version" onclick="toggleCodeVersion(this)">Show Full Version</button>
+    </div>
+
+    <!-- SIMPLIFIED VERSION (15 lines) -->
+    <pre class="code-simple active"><code id="code-d7-1-simple" class="language-javascript" data-type="api-documentation">// <span class="code-comment">Essential Swagger setup for API documentation</span>
+<span class="code-keyword">const</span> express = <span class="code-function">require</span>(<span class="code-string">'express'</span>);
+<span class="code-keyword">const</span> swaggerJsdoc = <span class="code-function">require</span>(<span class="code-string">'swagger-jsdoc'</span>);
+<span class="code-keyword">const</span> swaggerUi = <span class="code-function">require</span>(<span class="code-string">'swagger-ui-express'</span>);
+
+<span class="code-keyword">const</span> app = <span class="code-function">express</span>();
+app.<span class="code-function">use</span>(express.<span class="code-function">json</span>());
+
+<span class="code-comment">// Minimal Swagger configuration</span>
+<span class="code-keyword">const</span> swaggerOptions = {
+    <span class="code-property">definition</span>: {
+        <span class="code-property">openapi</span>: <span class="code-string">'3.0.0'</span>,
+        <span class="code-property">info</span>: {
+            <span class="code-property">title</span>: <span class="code-string">'RESTful API Learning Module'</span>,
+            <span class="code-property">version</span>: <span class="code-string">'1.0.0'</span>,
+            <span class="code-property">description</span>: <span class="code-string">'A complete REST API with authentication, caching, and rate limiting'</span>
+        },
+        <span class="code-property">servers</span>: [
+            { <span class="code-property">url</span>: <span class="code-string">'http://localhost:3000'</span>, <span class="code-property">description</span>: <span class="code-string">'Development server'</span> }
+        ]
+    },
+    <span class="code-property">apis</span>: [<span class="code-string">'./routes/*.js'</span>, <span class="code-string">'./server.js'</span>] <span class="code-comment">// Path to API docs</span>
+};
+
+<span class="code-keyword">const</span> swaggerSpec = <span class="code-function">swaggerJsdoc</span>(swaggerOptions);
+
+<span class="code-comment">// Serve interactive Swagger documentation at /api-docs</span>
+app.<span class="code-function">use</span>(<span class="code-string">'/api-docs'</span>, swaggerUi.serve, swaggerUi.<span class="code-function">setup</span>(swaggerSpec));
+
+<span class="code-comment">// Sample data for demonstration</span>
+<span class="code-keyword">let</span> users = [
+    { <span class="code-property">id</span>: <span class="code-number">1</span>, <span class="code-property">name</span>: <span class="code-string">'Alice'</span>, <span class="code-property">email</span>: <span class="code-string">'alice@example.com'</span> }
+];
+
+<span class="code-comment">/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get all users
+ *     responses:
+ *       200:
+ *         description: A list of users
+ */</span>
+app.<span class="code-function">get</span>(<span class="code-string">'/api/users'</span>, (req, res) => {
+    res.<span class="code-function">json</span>(users);
+});
+
+app.<span class="code-function">listen</span>(<span class="code-number">3000</span>, () => {
+    <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-string">'Swagger docs available at http://localhost:3000/api-docs'</span>);
+});
+</code></pre>
+
+    <!-- FULL VERSION (195 lines) -->
+    <pre class="code-full"><code id="code-d7-1-full" class="language-javascript" data-type="api-documentation">// <span class="code-comment">Complete Swagger/OpenAPI documentation setup with schemas and endpoints</span>
+<span class="code-keyword">const</span> express = <span class="code-function">require</span>(<span class="code-string">'express'</span>);
+<span class="code-keyword">const</span> swaggerJsdoc = <span class="code-function">require</span>(<span class="code-string">'swagger-jsdoc'</span>);
+<span class="code-keyword">const</span> swaggerUi = <span class="code-function">require</span>(<span class="code-string">'swagger-ui-express'</span>);
+<span class="code-keyword">const</span> app = <span class="code-function">express</span>();
+app.<span class="code-function">use</span>(express.<span class="code-function">json</span>());
+
+<span class="code-comment">// Comprehensive Swagger configuration with security and schemas</span>
+<span class="code-keyword">const</span> swaggerOptions = {
+    <span class="code-property">definition</span>: {
+        <span class="code-property">openapi</span>: <span class="code-string">'3.0.0'</span>, <span class="code-comment">// OpenAPI specification version</span>
+        <span class="code-property">info</span>: {
+            <span class="code-property">title</span>: <span class="code-string">'RESTful API Learning Module'</span>,
+            <span class="code-property">version</span>: <span class="code-string">'1.0.0'</span>,
+            <span class="code-property">description</span>: <span class="code-string">'A complete REST API with authentication, caching, and rate limiting'</span>,
+            <span class="code-property">contact</span>: {
+                <span class="code-property">name</span>: <span class="code-string">'API Support'</span>,
+                <span class="code-property">email</span>: <span class="code-string">'support@example.com'</span>
+            }
+        },
+        <span class="code-property">servers</span>: [
+            {
+                <span class="code-property">url</span>: <span class="code-string">'http://localhost:3000'</span>,
+                <span class="code-property">description</span>: <span class="code-string">'Development server'</span>
+            },
+            {
+                <span class="code-property">url</span>: <span class="code-string">'https://api.production.com'</span>,
+                <span class="code-property">description</span>: <span class="code-string">'Production server'</span>
+            }
+        ],
+        <span class="code-property">components</span>: {
+            <span class="code-comment">// Security scheme for JWT authentication</span>
+            <span class="code-property">securitySchemes</span>: {
+                <span class="code-property">bearerAuth</span>: {
+                    <span class="code-property">type</span>: <span class="code-string">'http'</span>,
+                    <span class="code-property">scheme</span>: <span class="code-string">'bearer'</span>,
+                    <span class="code-property">bearerFormat</span>: <span class="code-string">'JWT'</span>
+                }
+            },
+            <span class="code-comment">// Reusable schema definitions</span>
+            <span class="code-property">schemas</span>: {
+                <span class="code-property">User</span>: {
+                    <span class="code-property">type</span>: <span class="code-string">'object'</span>,
+                    <span class="code-property">required</span>: [<span class="code-string">'name'</span>, <span class="code-string">'email'</span>],
+                    <span class="code-property">properties</span>: {
+                        <span class="code-property">id</span>: {
+                            <span class="code-property">type</span>: <span class="code-string">'integer'</span>,
+                            <span class="code-property">description</span>: <span class="code-string">'User ID'</span>,
+                            <span class="code-property">example</span>: <span class="code-number">1</span>
+                        },
+                        <span class="code-property">name</span>: {
+                            <span class="code-property">type</span>: <span class="code-string">'string'</span>,
+                            <span class="code-property">description</span>: <span class="code-string">'User name'</span>,
+                            <span class="code-property">example</span>: <span class="code-string">'Alice Johnson'</span>
+                        },
+                        <span class="code-property">email</span>: {
+                            <span class="code-property">type</span>: <span class="code-string">'string'</span>,
+                            <span class="code-property">format</span>: <span class="code-string">'email'</span>,
+                            <span class="code-property">description</span>: <span class="code-string">'User email'</span>,
+                            <span class="code-property">example</span>: <span class="code-string">'alice@example.com'</span>
+                        }
+                    }
+                },
+                <span class="code-property">Error</span>: {
+                    <span class="code-property">type</span>: <span class="code-string">'object'</span>,
+                    <span class="code-property">properties</span>: {
+                        <span class="code-property">error</span>: {
+                            <span class="code-property">type</span>: <span class="code-string">'string'</span>,
+                            <span class="code-property">example</span>: <span class="code-string">'Not found'</span>
+                        },
+                        <span class="code-property">message</span>: {
+                            <span class="code-property">type</span>: <span class="code-string">'string'</span>,
+                            <span class="code-property">example</span>: <span class="code-string">'Resource not found'</span>
+                        }
+                    }
+                }
+            }
+        }
+    },
+    <span class="code-property">apis</span>: [<span class="code-string">'./routes/*.js'</span>, <span class="code-string">'./server.js'</span>] <span class="code-comment">// Path to files with API annotations</span>
+};
+
+<span class="code-keyword">const</span> swaggerSpec = <span class="code-function">swaggerJsdoc</span>(swaggerOptions);
+
+<span class="code-comment">// Serve interactive Swagger UI at /api-docs</span>
+app.<span class="code-function">use</span>(<span class="code-string">'/api-docs'</span>, swaggerUi.serve, swaggerUi.<span class="code-function">setup</span>(swaggerSpec));
+
+<span class="code-comment">// Sample data storage</span>
+<span class="code-keyword">let</span> users = [
+    { <span class="code-property">id</span>: <span class="code-number">1</span>, <span class="code-property">name</span>: <span class="code-string">'Alice'</span>, <span class="code-property">email</span>: <span class="code-string">'alice@example.com'</span> }
+];
+
+<span class="code-comment">/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get all users
+ *     description: Retrieve a list of all users
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: A list of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ */</span>
+app.<span class="code-function">get</span>(<span class="code-string">'/api/users'</span>, (req, res) => {
+    res.<span class="code-function">json</span>(users);
+});
+
+<span class="code-comment">/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     description: Retrieve a single user by their ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */</span>
+app.<span class="code-function">get</span>(<span class="code-string">'/api/users/:id'</span>, (req, res) => {
+    <span class="code-keyword">const</span> user = users.<span class="code-function">find</span>(<span class="code-variable">u</span> => u.id === <span class="code-built-in">parseInt</span>(req.params.id));
+    <span class="code-keyword">if</span> (!user) <span class="code-keyword">return</span> res.<span class="code-function">status</span>(<span class="code-number">404</span>).<span class="code-function">json</span>({ <span class="code-property">error</span>: <span class="code-string">'User not found'</span> });
+    res.<span class="code-function">json</span>(user);
+});
+
+<span class="code-comment">/**
+ * @swagger
+ * /api/users:
+ *   post:
+ *     summary: Create new user
+ *     description: Create a new user with name and email
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Bob Smith
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: bob@example.com
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid input
+ */</span>
+app.<span class="code-function">post</span>(<span class="code-string">'/api/users'</span>, (req, res) => {
+    <span class="code-keyword">const</span> { name, email } = req.body;
+    <span class="code-keyword">if</span> (!name || !email) {
+        <span class="code-keyword">return</span> res.<span class="code-function">status</span>(<span class="code-number">400</span>).<span class="code-function">json</span>({ <span class="code-property">error</span>: <span class="code-string">'Name and email required'</span> });
+    }
+    <span class="code-keyword">const</span> newUser = { <span class="code-property">id</span>: users.length + <span class="code-number">1</span>, name, email };
+    users.<span class="code-function">push</span>(newUser);
+    res.<span class="code-function">status</span>(<span class="code-number">201</span>).<span class="code-function">json</span>(newUser);
+});
+
+app.<span class="code-function">listen</span>(<span class="code-number">3000</span>, () => {
+    <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-string">'API running on port 3000'</span>);
+    <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-string">'Swagger docs available at http://localhost:3000/api-docs'</span>);
+});
+</code></pre>
+</div>
+
+<!-- CODE BLOCK 2: Automated Testing with Jest & Supertest -->
+<h4>2. Automated Testing with Jest & Supertest</h4>
+<div class="code-block">
+    <div class="code-header">
+        <span>JavaScript - API Tests (npm install --save-dev jest supertest)</span>
+        <button class="copy-btn" onclick="copyCode(this, 'code-d7-2-simple')">Copy</button>
+        <button class="toggle-version" onclick="toggleCodeVersion(this)">Show Full Version</button>
+    </div>
+
+    <!-- SIMPLIFIED VERSION (30 lines) -->
+    <pre class="code-simple active"><code id="code-d7-2-simple" class="language-javascript" data-type="testing">// <span class="code-comment">api.test.js - Essential API testing patterns</span>
+<span class="code-keyword">const</span> request = <span class="code-function">require</span>(<span class="code-string">'supertest'</span>);
+<span class="code-keyword">const</span> express = <span class="code-function">require</span>(<span class="code-string">'express'</span>);
+
+<span class="code-comment">// Create test app with basic endpoints</span>
+<span class="code-keyword">const</span> <span class="code-function">createApp</span> = () => {
+    <span class="code-keyword">const</span> app = <span class="code-function">express</span>();
+    app.<span class="code-function">use</span>(express.<span class="code-function">json</span>());
+
+    <span class="code-keyword">let</span> users = [
+        { <span class="code-property">id</span>: <span class="code-number">1</span>, <span class="code-property">name</span>: <span class="code-string">'Alice'</span>, <span class="code-property">email</span>: <span class="code-string">'alice@example.com'</span> }
+    ];
+
+    <span class="code-comment">// GET endpoint for testing</span>
+    app.<span class="code-function">get</span>(<span class="code-string">'/api/users'</span>, (req, res) => {
+        res.<span class="code-function">json</span>(users);
+    });
+
+    <span class="code-comment">// POST endpoint for testing</span>
+    app.<span class="code-function">post</span>(<span class="code-string">'/api/users'</span>, (req, res) => {
+        <span class="code-keyword">const</span> { name, email } = req.body;
+        <span class="code-keyword">if</span> (!name || !email) {
+            <span class="code-keyword">return</span> res.<span class="code-function">status</span>(<span class="code-number">400</span>).<span class="code-function">json</span>({ <span class="code-property">error</span>: <span class="code-string">'Name and email required'</span> });
+        }
+        <span class="code-keyword">const</span> newUser = { <span class="code-property">id</span>: users.length + <span class="code-number">1</span>, name, email };
+        users.<span class="code-function">push</span>(newUser);
+        res.<span class="code-function">status</span>(<span class="code-number">201</span>).<span class="code-function">json</span>(newUser);
+    });
+
+    <span class="code-keyword">return</span> app;
+};
+
+<span class="code-comment">// Test suite for Users API</span>
+<span class="code-function">describe</span>(<span class="code-string">'Users API'</span>, () => {
+    <span class="code-keyword">let</span> app;
+
+    <span class="code-function">beforeEach</span>(() => {
+        app = <span class="code-function">createApp</span>(); <span class="code-comment">// Fresh app for each test</span>
+    });
+
+    <span class="code-comment">// Test GET /api/users endpoint</span>
+    <span class="code-function">describe</span>(<span class="code-string">'GET /api/users'</span>, () => {
+        <span class="code-function">it</span>(<span class="code-string">'should return all users'</span>, <span class="code-keyword">async</span> () => {
+            <span class="code-keyword">const</span> response = <span class="code-keyword">await</span> <span class="code-function">request</span>(app)
+                .<span class="code-function">get</span>(<span class="code-string">'/api/users'</span>)
+                .<span class="code-function">expect</span>(<span class="code-string">'Content-Type'</span>, <span class="code-regex">/json/</span>)
+                .<span class="code-function">expect</span>(<span class="code-number">200</span>);
+
+            <span class="code-function">expect</span>(response.body).<span class="code-function">toBeInstanceOf</span>(<span class="code-built-in">Array</span>);
+            <span class="code-function">expect</span>(response.body[<span class="code-number">0</span>]).<span class="code-function">toHaveProperty</span>(<span class="code-string">'id'</span>);
+        });
+    });
+
+    <span class="code-comment">// Test POST /api/users endpoint</span>
+    <span class="code-function">describe</span>(<span class="code-string">'POST /api/users'</span>, () => {
+        <span class="code-function">it</span>(<span class="code-string">'should create a new user'</span>, <span class="code-keyword">async</span> () => {
+            <span class="code-keyword">const</span> newUser = {
+                <span class="code-property">name</span>: <span class="code-string">'Charlie'</span>,
+                <span class="code-property">email</span>: <span class="code-string">'charlie@example.com'</span>
+            };
+
+            <span class="code-keyword">const</span> response = <span class="code-keyword">await</span> <span class="code-function">request</span>(app)
+                .<span class="code-function">post</span>(<span class="code-string">'/api/users'</span>)
+                .<span class="code-function">send</span>(newUser)
+                .<span class="code-function">expect</span>(<span class="code-number">201</span>);
+
+            <span class="code-function">expect</span>(response.body.name).<span class="code-function">toBe</span>(newUser.name);
+        });
+    });
+});
+
+<span class="code-comment">// Run tests with: npm test</span>
+</code></pre>
+
+    <!-- FULL VERSION (146 lines) -->
+    <pre class="code-full"><code id="code-d7-2-full" class="language-javascript" data-type="testing">// <span class="code-comment">api.test.js - Comprehensive API testing suite</span>
+<span class="code-keyword">const</span> request = <span class="code-function">require</span>(<span class="code-string">'supertest'</span>);
+<span class="code-keyword">const</span> express = <span class="code-function">require</span>(<span class="code-string">'express'</span>);
+
+<span class="code-comment">// Create test app with all CRUD endpoints</span>
+<span class="code-keyword">const</span> <span class="code-function">createApp</span> = () => {
+    <span class="code-keyword">const</span> app = <span class="code-function">express</span>();
+    app.<span class="code-function">use</span>(express.<span class="code-function">json</span>());
+
+    <span class="code-keyword">let</span> users = [
+        { <span class="code-property">id</span>: <span class="code-number">1</span>, <span class="code-property">name</span>: <span class="code-string">'Alice'</span>, <span class="code-property">email</span>: <span class="code-string">'alice@example.com'</span> },
+        { <span class="code-property">id</span>: <span class="code-number">2</span>, <span class="code-property">name</span>: <span class="code-string">'Bob'</span>, <span class="code-property">email</span>: <span class="code-string">'bob@example.com'</span> }
+    ];
+
+    <span class="code-comment">// GET all users</span>
+    app.<span class="code-function">get</span>(<span class="code-string">'/api/users'</span>, (req, res) => {
+        res.<span class="code-function">json</span>(users);
+    });
+
+    <span class="code-comment">// GET user by ID</span>
+    app.<span class="code-function">get</span>(<span class="code-string">'/api/users/:id'</span>, (req, res) => {
+        <span class="code-keyword">const</span> user = users.<span class="code-function">find</span>(<span class="code-variable">u</span> => u.id === <span class="code-built-in">parseInt</span>(req.params.id));
+        <span class="code-keyword">if</span> (!user) <span class="code-keyword">return</span> res.<span class="code-function">status</span>(<span class="code-number">404</span>).<span class="code-function">json</span>({ <span class="code-property">error</span>: <span class="code-string">'User not found'</span> });
+        res.<span class="code-function">json</span>(user);
+    });
+
+    <span class="code-comment">// POST create new user</span>
+    app.<span class="code-function">post</span>(<span class="code-string">'/api/users'</span>, (req, res) => {
+        <span class="code-keyword">const</span> { name, email } = req.body;
+        <span class="code-keyword">if</span> (!name || !email) {
+            <span class="code-keyword">return</span> res.<span class="code-function">status</span>(<span class="code-number">400</span>).<span class="code-function">json</span>({ <span class="code-property">error</span>: <span class="code-string">'Name and email required'</span> });
+        }
+        <span class="code-keyword">const</span> newUser = { <span class="code-property">id</span>: users.length + <span class="code-number">1</span>, name, email };
+        users.<span class="code-function">push</span>(newUser);
+        res.<span class="code-function">status</span>(<span class="code-number">201</span>).<span class="code-function">json</span>(newUser);
+    });
+
+    <span class="code-comment">// DELETE user by ID</span>
+    app.<span class="code-function">delete</span>(<span class="code-string">'/api/users/:id'</span>, (req, res) => {
+        <span class="code-keyword">const</span> index = users.<span class="code-function">findIndex</span>(<span class="code-variable">u</span> => u.id === <span class="code-built-in">parseInt</span>(req.params.id));
+        <span class="code-keyword">if</span> (index === <span class="code-number">-1</span>) {
+            <span class="code-keyword">return</span> res.<span class="code-function">status</span>(<span class="code-number">404</span>).<span class="code-function">json</span>({ <span class="code-property">error</span>: <span class="code-string">'User not found'</span> });
+        }
+        users.<span class="code-function">splice</span>(index, <span class="code-number">1</span>);
+        res.<span class="code-function">status</span>(<span class="code-number">204</span>).<span class="code-function">send</span>();
+    });
+
+    <span class="code-keyword">return</span> app;
+};
+
+<span class="code-comment">// Comprehensive test suite</span>
+<span class="code-function">describe</span>(<span class="code-string">'Users API'</span>, () => {
+    <span class="code-keyword">let</span> app;
+
+    <span class="code-function">beforeEach</span>(() => {
+        app = <span class="code-function">createApp</span>(); <span class="code-comment">// Fresh app instance for each test</span>
+    });
+
+    <span class="code-comment">// Test GET all users</span>
+    <span class="code-function">describe</span>(<span class="code-string">'GET /api/users'</span>, () => {
+        <span class="code-function">it</span>(<span class="code-string">'should return all users'</span>, <span class="code-keyword">async</span> () => {
+            <span class="code-keyword">const</span> response = <span class="code-keyword">await</span> <span class="code-function">request</span>(app)
+                .<span class="code-function">get</span>(<span class="code-string">'/api/users'</span>)
+                .<span class="code-function">expect</span>(<span class="code-string">'Content-Type'</span>, <span class="code-regex">/json/</span>)
+                .<span class="code-function">expect</span>(<span class="code-number">200</span>);
+
+            <span class="code-function">expect</span>(response.body).<span class="code-function">toBeInstanceOf</span>(<span class="code-built-in">Array</span>);
+            <span class="code-function">expect</span>(response.body.length).<span class="code-function">toBeGreaterThan</span>(<span class="code-number">0</span>);
+            <span class="code-function">expect</span>(response.body[<span class="code-number">0</span>]).<span class="code-function">toHaveProperty</span>(<span class="code-string">'id'</span>);
+            <span class="code-function">expect</span>(response.body[<span class="code-number">0</span>]).<span class="code-function">toHaveProperty</span>(<span class="code-string">'name'</span>);
+            <span class="code-function">expect</span>(response.body[<span class="code-number">0</span>]).<span class="code-function">toHaveProperty</span>(<span class="code-string">'email'</span>);
+        });
+    });
+
+    <span class="code-comment">// Test GET user by ID</span>
+    <span class="code-function">describe</span>(<span class="code-string">'GET /api/users/:id'</span>, () => {
+        <span class="code-function">it</span>(<span class="code-string">'should return a user by ID'</span>, <span class="code-keyword">async</span> () => {
+            <span class="code-keyword">const</span> response = <span class="code-keyword">await</span> <span class="code-function">request</span>(app)
+                .<span class="code-function">get</span>(<span class="code-string">'/api/users/1'</span>)
+                .<span class="code-function">expect</span>(<span class="code-number">200</span>);
+
+            <span class="code-function">expect</span>(response.body).<span class="code-function">toHaveProperty</span>(<span class="code-string">'id'</span>, <span class="code-number">1</span>);
+            <span class="code-function">expect</span>(response.body).<span class="code-function">toHaveProperty</span>(<span class="code-string">'name'</span>);
+            <span class="code-function">expect</span>(response.body).<span class="code-function">toHaveProperty</span>(<span class="code-string">'email'</span>);
+        });
+
+        <span class="code-function">it</span>(<span class="code-string">'should return 404 for non-existent user'</span>, <span class="code-keyword">async</span> () => {
+            <span class="code-keyword">const</span> response = <span class="code-keyword">await</span> <span class="code-function">request</span>(app)
+                .<span class="code-function">get</span>(<span class="code-string">'/api/users/999'</span>)
+                .<span class="code-function">expect</span>(<span class="code-number">404</span>);
+
+            <span class="code-function">expect</span>(response.body).<span class="code-function">toHaveProperty</span>(<span class="code-string">'error'</span>);
+        });
+    });
+
+    <span class="code-comment">// Test POST create user</span>
+    <span class="code-function">describe</span>(<span class="code-string">'POST /api/users'</span>, () => {
+        <span class="code-function">it</span>(<span class="code-string">'should create a new user'</span>, <span class="code-keyword">async</span> () => {
+            <span class="code-keyword">const</span> newUser = {
+                <span class="code-property">name</span>: <span class="code-string">'Charlie'</span>,
+                <span class="code-property">email</span>: <span class="code-string">'charlie@example.com'</span>
+            };
+
+            <span class="code-keyword">const</span> response = <span class="code-keyword">await</span> <span class="code-function">request</span>(app)
+                .<span class="code-function">post</span>(<span class="code-string">'/api/users'</span>)
+                .<span class="code-function">send</span>(newUser)
+                .<span class="code-function">expect</span>(<span class="code-string">'Content-Type'</span>, <span class="code-regex">/json/</span>)
+                .<span class="code-function">expect</span>(<span class="code-number">201</span>);
+
+            <span class="code-function">expect</span>(response.body).<span class="code-function">toHaveProperty</span>(<span class="code-string">'id'</span>);
+            <span class="code-function">expect</span>(response.body.name).<span class="code-function">toBe</span>(newUser.name);
+            <span class="code-function">expect</span>(response.body.email).<span class="code-function">toBe</span>(newUser.email);
+        });
+
+        <span class="code-function">it</span>(<span class="code-string">'should return 400 if name is missing'</span>, <span class="code-keyword">async</span> () => {
+            <span class="code-keyword">const</span> response = <span class="code-keyword">await</span> <span class="code-function">request</span>(app)
+                .<span class="code-function">post</span>(<span class="code-string">'/api/users'</span>)
+                .<span class="code-function">send</span>({ <span class="code-property">email</span>: <span class="code-string">'test@example.com'</span> })
+                .<span class="code-function">expect</span>(<span class="code-number">400</span>);
+
+            <span class="code-function">expect</span>(response.body).<span class="code-function">toHaveProperty</span>(<span class="code-string">'error'</span>);
+        });
+
+        <span class="code-function">it</span>(<span class="code-string">'should return 400 if email is missing'</span>, <span class="code-keyword">async</span> () => {
+            <span class="code-keyword">const</span> response = <span class="code-keyword">await</span> <span class="code-function">request</span>(app)
+                .<span class="code-function">post</span>(<span class="code-string">'/api/users'</span>)
+                .<span class="code-function">send</span>({ <span class="code-property">name</span>: <span class="code-string">'Test User'</span> })
+                .<span class="code-function">expect</span>(<span class="code-number">400</span>);
+
+            <span class="code-function">expect</span>(response.body).<span class="code-function">toHaveProperty</span>(<span class="code-string">'error'</span>);
+        });
+    });
+
+    <span class="code-comment">// Test DELETE user</span>
+    <span class="code-function">describe</span>(<span class="code-string">'DELETE /api/users/:id'</span>, () => {
+        <span class="code-function">it</span>(<span class="code-string">'should delete a user'</span>, <span class="code-keyword">async</span> () => {
+            <span class="code-keyword">await</span> <span class="code-function">request</span>(app)
+                .<span class="code-function">delete</span>(<span class="code-string">'/api/users/1'</span>)
+                .<span class="code-function">expect</span>(<span class="code-number">204</span>);
+
+            <span class="code-comment">// Verify user is deleted</span>
+            <span class="code-keyword">await</span> <span class="code-function">request</span>(app)
+                .<span class="code-function">get</span>(<span class="code-string">'/api/users/1'</span>)
+                .<span class="code-function">expect</span>(<span class="code-number">404</span>);
+        });
+
+        <span class="code-function">it</span>(<span class="code-string">'should return 404 for non-existent user'</span>, <span class="code-keyword">async</span> () => {
+            <span class="code-keyword">await</span> <span class="code-function">request</span>(app)
+                .<span class="code-function">delete</span>(<span class="code-string">'/api/users/999'</span>)
+                .<span class="code-function">expect</span>(<span class="code-number">404</span>);
+        });
+    });
+});
+
+<span class="code-comment">// Run tests with: npm test</span>
+</code></pre>
+</div>
+
+<!-- CODE BLOCK 3: GitHub Actions CI/CD Pipeline -->
+<h4>3. GitHub Actions CI/CD Pipeline</h4>
+<div class="code-block">
+    <div class="code-header">
+        <span>YAML - GitHub Actions Workflow (.github/workflows/ci.yml)</span>
+        <button class="copy-btn" onclick="copyCode(this, 'code-d7-3')">Copy</button>
+    </div>
+    <pre><code id="code-d7-3" class="language-yaml" data-type="ci-cd"><span class="code-comment"># Complete CI/CD pipeline for automated testing and deployment</span>
+<span class="code-property">name</span>: <span class="code-string">CI/CD Pipeline</span>
+
+<span class="code-comment"># Trigger on push to main/develop or pull requests</span>
+<span class="code-property">on</span>:
+  <span class="code-property">push</span>:
+    <span class="code-property">branches</span>: [ main, develop ]
+  <span class="code-property">pull_request</span>:
+    <span class="code-property">branches</span>: [ main ]
+
+<span class="code-property">jobs</span>:
+  <span class="code-comment"># Job 1: Run tests across multiple Node versions</span>
+  <span class="code-property">test</span>:
+    <span class="code-property">runs-on</span>: <span class="code-string">ubuntu-latest</span>
+
+    <span class="code-comment"># Test matrix for multiple Node.js versions</span>
+    <span class="code-property">strategy</span>:
+      <span class="code-property">matrix</span>:
+        <span class="code-property">node-version</span>: [16.x, 18.x, 20.x]
+
+    <span class="code-property">steps</span>:
+    <span class="code-comment"># Step 1: Checkout repository code</span>
+    - <span class="code-property">name</span>: <span class="code-string">Checkout code</span>
+      <span class="code-property">uses</span>: <span class="code-string">actions/checkout@v3</span>
+
+    <span class="code-comment"># Step 2: Setup Node.js environment</span>
+    - <span class="code-property">name</span>: <span class="code-string">Setup Node.js ${{ matrix.node-version }}</span>
+      <span class="code-property">uses</span>: <span class="code-string">actions/setup-node@v3</span>
+      <span class="code-property">with</span>:
+        <span class="code-property">node-version</span>: <span class="code-string">${{ matrix.node-version }}</span>
+        <span class="code-property">cache</span>: <span class="code-string">'npm'</span>
+
+    <span class="code-comment"># Step 3: Install dependencies (clean install)</span>
+    - <span class="code-property">name</span>: <span class="code-string">Install dependencies</span>
+      <span class="code-property">run</span>: <span class="code-string">npm ci</span>
+
+    <span class="code-comment"># Step 4: Run code linter</span>
+    - <span class="code-property">name</span>: <span class="code-string">Run linter</span>
+      <span class="code-property">run</span>: <span class="code-string">npm run lint</span>
+
+    <span class="code-comment"># Step 5: Run test suite</span>
+    - <span class="code-property">name</span>: <span class="code-string">Run tests</span>
+      <span class="code-property">run</span>: <span class="code-string">npm test</span>
+
+    <span class="code-comment"># Step 6: Generate coverage report</span>
+    - <span class="code-property">name</span>: <span class="code-string">Run tests with coverage</span>
+      <span class="code-property">run</span>: <span class="code-string">npm run test:coverage</span>
+
+    <span class="code-comment"># Step 7: Upload coverage to Codecov</span>
+    - <span class="code-property">name</span>: <span class="code-string">Upload coverage to Codecov</span>
+      <span class="code-property">uses</span>: <span class="code-string">codecov/codecov-action@v3</span>
+      <span class="code-property">with</span>:
+        <span class="code-property">file</span>: <span class="code-string">./coverage/lcov.info</span>
+
+  <span class="code-comment"># Job 2: Deploy to production (only on main branch)</span>
+  <span class="code-property">deploy</span>:
+    <span class="code-property">needs</span>: <span class="code-string">test</span> <span class="code-comment"># Wait for tests to pass</span>
+    <span class="code-property">runs-on</span>: <span class="code-string">ubuntu-latest</span>
+    <span class="code-property">if</span>: <span class="code-string">github.ref == 'refs/heads/main'</span> <span class="code-comment"># Only deploy from main</span>
+
+    <span class="code-property">steps</span>:
+    <span class="code-comment"># Step 1: Checkout code</span>
+    - <span class="code-property">name</span>: <span class="code-string">Checkout code</span>
+      <span class="code-property">uses</span>: <span class="code-string">actions/checkout@v3</span>
+
+    <span class="code-comment"># Step 2: Deploy to Heroku</span>
+    - <span class="code-property">name</span>: <span class="code-string">Deploy to Heroku</span>
+      <span class="code-property">uses</span>: <span class="code-string">akhileshns/heroku-deploy@v3.12.14</span>
+      <span class="code-property">with</span>:
+        <span class="code-property">heroku_api_key</span>: <span class="code-string">${{ secrets.HEROKU_API_KEY }}</span>
+        <span class="code-property">heroku_app_name</span>: <span class="code-string">"your-app-name"</span>
+        <span class="code-property">heroku_email</span>: <span class="code-string">"your-email@example.com"</span>
+
+    <span class="code-comment"># Step 3: Deploy to Vercel</span>
+    - <span class="code-property">name</span>: <span class="code-string">Deploy to Vercel</span>
+      <span class="code-property">uses</span>: <span class="code-string">amondnet/vercel-action@v20</span>
+      <span class="code-property">with</span>:
+        <span class="code-property">vercel-token</span>: <span class="code-string">${{ secrets.VERCEL_TOKEN }}</span>
+        <span class="code-property">vercel-org-id</span>: <span class="code-string">${{ secrets.VERCEL_ORG_ID }}</span>
+        <span class="code-property">vercel-project-id</span>: <span class="code-string">${{ secrets.VERCEL_PROJECT_ID }}</span>
+        <span class="code-property">vercel-args</span>: <span class="code-string">'--prod'</span>
+
+    <span class="code-comment"># Step 4: Notify successful deployment</span>
+    - <span class="code-property">name</span>: <span class="code-string">Notify deployment</span>
+      <span class="code-property">run</span>: |
+        <span class="code-string">echo "Deployment successful!"</span>
+        <span class="code-string">echo "API URL: https://your-app-name.herokuapp.com"</span>
+</code></pre>
+</div>
+
+<!-- CODE BLOCK 4: localStorage Test Results Tracker -->
+<div class="storage-demo">
+    <h4>💾 localStorage Practical: Test Results Tracker</h4>
+    <p>Track your testing progress and test coverage over time:</p>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Test Results Tracker</span>
+            <button class="copy-btn" onclick="copyCode(this, 'storage-d7-simple')">Copy</button>
+            <button class="toggle-version" onclick="toggleCodeVersion(this)">Show Full Version</button>
+        </div>
+
+        <!-- SIMPLIFIED VERSION (40 lines) -->
+        <pre class="code-simple active"><code id="storage-d7-simple" class="language-javascript" data-type="localstorage">// <span class="code-comment">Test Results Tracker - Essential tracking functionality</span>
+<span class="code-keyword">const</span> <span class="code-constant">TEST_RESULTS_KEY</span> = <span class="code-string">'day7_test_results'</span>;
+<span class="code-keyword">const</span> <span class="code-constant">MAX_HISTORY</span> = <span class="code-number">50</span>; <span class="code-comment">// Keep last 50 test runs</span>
+
+<span class="code-keyword">class</span> <span class="code-class">TestResultsTracker</span> {
+    <span class="code-function">constructor</span>() {
+        <span class="code-keyword">this</span>.results = <span class="code-keyword">this</span>.<span class="code-function">loadResults</span>();
+    }
+
+    <span class="code-comment">// Load test results from localStorage</span>
+    <span class="code-function">loadResults</span>() {
+        <span class="code-keyword">const</span> data = <span class="code-built-in">localStorage</span>.<span class="code-function">getItem</span>(<span class="code-constant">TEST_RESULTS_KEY</span>);
+        <span class="code-keyword">return</span> data ? <span class="code-built-in">JSON</span>.<span class="code-function">parse</span>(data) : [];
+    }
+
+    <span class="code-comment">// Save results to localStorage with history limit</span>
+    <span class="code-function">saveResults</span>() {
+        <span class="code-keyword">if</span> (<span class="code-keyword">this</span>.results.length > <span class="code-constant">MAX_HISTORY</span>) {
+            <span class="code-keyword">this</span>.results = <span class="code-keyword">this</span>.results.<span class="code-function">slice</span>(-<span class="code-constant">MAX_HISTORY</span>);
+        }
+        <span class="code-built-in">localStorage</span>.<span class="code-function">setItem</span>(<span class="code-constant">TEST_RESULTS_KEY</span>, <span class="code-built-in">JSON</span>.<span class="code-function">stringify</span>(<span class="code-keyword">this</span>.results));
+    }
+
+    <span class="code-comment">// Record a test run with coverage data</span>
+    <span class="code-function">recordTestRun</span>(data) {
+        <span class="code-keyword">const</span> result = {
+            <span class="code-property">id</span>: <span class="code-built-in">Date</span>.<span class="code-function">now</span>(),
+            <span class="code-property">timestamp</span>: <span class="code-keyword">new</span> <span class="code-built-in">Date</span>().<span class="code-function">toISOString</span>(),
+            <span class="code-property">totalTests</span>: data.totalTests || <span class="code-number">0</span>,
+            <span class="code-property">passed</span>: data.passed || <span class="code-number">0</span>,
+            <span class="code-property">failed</span>: data.failed || <span class="code-number">0</span>,
+            <span class="code-property">coverage</span>: {
+                <span class="code-property">lines</span>: data.coverage?.lines || <span class="code-number">0</span>,
+                <span class="code-property">branches</span>: data.coverage?.branches || <span class="code-number">0</span>
+            }
+        };
+
+        <span class="code-keyword">this</span>.results.<span class="code-function">push</span>(result);
+        <span class="code-keyword">this</span>.<span class="code-function">saveResults</span>();
+
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-template">`✅ Test run recorded: ${result.passed}/${result.totalTests} passed`</span>);
+        <span class="code-keyword">return</span> result;
+    }
+
+    <span class="code-comment">// Get statistics from test history</span>
+    <span class="code-function">getStats</span>() {
+        <span class="code-keyword">if</span> (<span class="code-keyword">this</span>.results.length === <span class="code-number">0</span>) {
+            <span class="code-keyword">return</span> { <span class="code-property">noData</span>: <span class="code-boolean">true</span> };
+        }
+
+        <span class="code-keyword">const</span> latestRun = <span class="code-keyword">this</span>.results[<span class="code-keyword">this</span>.results.length - <span class="code-number">1</span>];
+        <span class="code-keyword">const</span> passRates = <span class="code-keyword">this</span>.results.<span class="code-function">map</span>(<span class="code-variable">r</span> => (r.passed / r.totalTests) * <span class="code-number">100</span>);
+        <span class="code-keyword">const</span> avgPassRate = passRates.<span class="code-function">reduce</span>((<span class="code-variable">a</span>, <span class="code-variable">b</span>) => a + b, <span class="code-number">0</span>) / passRates.length;
+
+        <span class="code-keyword">return</span> {
+            <span class="code-property">totalRuns</span>: <span class="code-keyword">this</span>.results.length,
+            latestRun,
+            <span class="code-property">averagePassRate</span>: avgPassRate.<span class="code-function">toFixed</span>(<span class="code-number">2</span>)
+        };
+    }
+
+    <span class="code-comment">// Clear all test history</span>
+    <span class="code-function">reset</span>() {
+        <span class="code-keyword">this</span>.results = [];
+        <span class="code-built-in">localStorage</span>.<span class="code-function">removeItem</span>(<span class="code-constant">TEST_RESULTS_KEY</span>);
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-string">'🗑️ Test results cleared'</span>);
+    }
+}
+
+<span class="code-comment">// Usage example</span>
+<span class="code-keyword">const</span> testTracker = <span class="code-keyword">new</span> <span class="code-class">TestResultsTracker</span>();
+
+<span class="code-comment">// Record a test run</span>
+testTracker.<span class="code-function">recordTestRun</span>({
+    <span class="code-property">totalTests</span>: <span class="code-number">25</span>,
+    <span class="code-property">passed</span>: <span class="code-number">23</span>,
+    <span class="code-property">failed</span>: <span class="code-number">2</span>,
+    <span class="code-property">coverage</span>: {
+        <span class="code-property">lines</span>: <span class="code-number">87.5</span>,
+        <span class="code-property">branches</span>: <span class="code-number">82.3</span>
+    }
+});
+
+<span class="code-comment">// Get statistics</span>
+<span class="code-keyword">const</span> stats = testTracker.<span class="code-function">getStats</span>();
+<span class="code-built-in">console</span>.<span class="code-function">log</span>(stats);
+</code></pre>
+
+        <!-- FULL VERSION (171 lines) -->
+        <pre class="code-full"><code id="storage-d7-full" class="language-javascript" data-type="localstorage">// <span class="code-comment">Test Results Tracker - Complete tracking with analytics</span>
+<span class="code-keyword">const</span> <span class="code-constant">TEST_RESULTS_KEY</span> = <span class="code-string">'day7_test_results'</span>;
+<span class="code-keyword">const</span> <span class="code-constant">MAX_HISTORY</span> = <span class="code-number">50</span>; <span class="code-comment">// Maximum test runs to store</span>
+
+<span class="code-keyword">class</span> <span class="code-class">TestResultsTracker</span> {
+    <span class="code-function">constructor</span>() {
+        <span class="code-keyword">this</span>.results = <span class="code-keyword">this</span>.<span class="code-function">loadResults</span>();
+    }
+
+    <span class="code-comment">// Load test results from localStorage</span>
+    <span class="code-function">loadResults</span>() {
+        <span class="code-keyword">const</span> data = <span class="code-built-in">localStorage</span>.<span class="code-function">getItem</span>(<span class="code-constant">TEST_RESULTS_KEY</span>);
+        <span class="code-keyword">return</span> data ? <span class="code-built-in">JSON</span>.<span class="code-function">parse</span>(data) : [];
+    }
+
+    <span class="code-comment">// Save results with automatic pruning of old data</span>
+    <span class="code-function">saveResults</span>() {
+        <span class="code-keyword">if</span> (<span class="code-keyword">this</span>.results.length > <span class="code-constant">MAX_HISTORY</span>) {
+            <span class="code-keyword">this</span>.results = <span class="code-keyword">this</span>.results.<span class="code-function">slice</span>(-<span class="code-constant">MAX_HISTORY</span>);
+        }
+        <span class="code-built-in">localStorage</span>.<span class="code-function">setItem</span>(<span class="code-constant">TEST_RESULTS_KEY</span>, <span class="code-built-in">JSON</span>.<span class="code-function">stringify</span>(<span class="code-keyword">this</span>.results));
+    }
+
+    <span class="code-comment">// Record comprehensive test run data</span>
+    <span class="code-function">recordTestRun</span>(data) {
+        <span class="code-keyword">const</span> result = {
+            <span class="code-property">id</span>: <span class="code-built-in">Date</span>.<span class="code-function">now</span>(),
+            <span class="code-property">timestamp</span>: <span class="code-keyword">new</span> <span class="code-built-in">Date</span>().<span class="code-function">toISOString</span>(),
+            <span class="code-property">totalTests</span>: data.totalTests || <span class="code-number">0</span>,
+            <span class="code-property">passed</span>: data.passed || <span class="code-number">0</span>,
+            <span class="code-property">failed</span>: data.failed || <span class="code-number">0</span>,
+            <span class="code-property">skipped</span>: data.skipped || <span class="code-number">0</span>,
+            <span class="code-property">duration</span>: data.duration || <span class="code-number">0</span>, <span class="code-comment">// Test duration in ms</span>
+            <span class="code-property">coverage</span>: {
+                <span class="code-property">lines</span>: data.coverage?.lines || <span class="code-number">0</span>,
+                <span class="code-property">branches</span>: data.coverage?.branches || <span class="code-number">0</span>,
+                <span class="code-property">functions</span>: data.coverage?.functions || <span class="code-number">0</span>,
+                <span class="code-property">statements</span>: data.coverage?.statements || <span class="code-number">0</span>
+            },
+            <span class="code-property">failedTests</span>: data.failedTests || [] <span class="code-comment">// Track which tests failed</span>
+        };
+
+        <span class="code-keyword">this</span>.results.<span class="code-function">push</span>(result);
+        <span class="code-keyword">this</span>.<span class="code-function">saveResults</span>();
+
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-template">`✅ Test run recorded: ${result.passed}/${result.totalTests} passed`</span>);
+        <span class="code-keyword">return</span> result;
+    }
+
+    <span class="code-comment">// Get comprehensive statistics</span>
+    <span class="code-function">getStats</span>() {
+        <span class="code-keyword">if</span> (<span class="code-keyword">this</span>.results.length === <span class="code-number">0</span>) {
+            <span class="code-keyword">return</span> { <span class="code-property">noData</span>: <span class="code-boolean">true</span> };
+        }
+
+        <span class="code-keyword">const</span> latestRun = <span class="code-keyword">this</span>.results[<span class="code-keyword">this</span>.results.length - <span class="code-number">1</span>];
+        <span class="code-keyword">const</span> totalRuns = <span class="code-keyword">this</span>.results.length;
+
+        <span class="code-comment">// Calculate average coverage across all metrics</span>
+        <span class="code-keyword">const</span> averageCoverage = {
+            <span class="code-property">lines</span>: <span class="code-keyword">this</span>.<span class="code-function">average</span>(<span class="code-string">'coverage.lines'</span>),
+            <span class="code-property">branches</span>: <span class="code-keyword">this</span>.<span class="code-function">average</span>(<span class="code-string">'coverage.branches'</span>),
+            <span class="code-property">functions</span>: <span class="code-keyword">this</span>.<span class="code-function">average</span>(<span class="code-string">'coverage.functions'</span>),
+            <span class="code-property">statements</span>: <span class="code-keyword">this</span>.<span class="code-function">average</span>(<span class="code-string">'coverage.statements'</span>)
+        };
+
+        <span class="code-comment">// Calculate pass rate trend</span>
+        <span class="code-keyword">const</span> passRate = <span class="code-keyword">this</span>.results.<span class="code-function">map</span>(<span class="code-variable">r</span> =>
+            (r.passed / r.totalTests) * <span class="code-number">100</span>
+        );
+
+        <span class="code-keyword">return</span> {
+            totalRuns,
+            latestRun,
+            <span class="code-property">averagePassRate</span>: <span class="code-keyword">this</span>.<span class="code-function">arrayAverage</span>(passRate),
+            averageCoverage,
+            <span class="code-property">trend</span>: <span class="code-keyword">this</span>.<span class="code-function">calculateTrend</span>(),
+            <span class="code-property">mostFailedTests</span>: <span class="code-keyword">this</span>.<span class="code-function">getMostFailedTests</span>()
+        };
+    }
+
+    <span class="code-comment">// Calculate average of nested property (e.g., 'coverage.lines')</span>
+    <span class="code-function">average</span>(path) {
+        <span class="code-keyword">const</span> values = <span class="code-keyword">this</span>.results.<span class="code-function">map</span>(<span class="code-variable">r</span> => {
+            <span class="code-keyword">const</span> parts = path.<span class="code-function">split</span>(<span class="code-string">'.'</span>);
+            <span class="code-keyword">let</span> value = r;
+            <span class="code-keyword">for</span> (<span class="code-keyword">const</span> part <span class="code-keyword">of</span> parts) {
+                value = value[part];
+            }
+            <span class="code-keyword">return</span> value;
+        });
+        <span class="code-keyword">return</span> <span class="code-keyword">this</span>.<span class="code-function">arrayAverage</span>(values);
+    }
+
+    <span class="code-comment">// Calculate average of array</span>
+    <span class="code-function">arrayAverage</span>(arr) {
+        <span class="code-keyword">return</span> arr.<span class="code-function">reduce</span>((<span class="code-variable">a</span>, <span class="code-variable">b</span>) => a + b, <span class="code-number">0</span>) / arr.length;
+    }
+
+    <span class="code-comment">// Calculate trend from recent 5 test runs</span>
+    <span class="code-function">calculateTrend</span>() {
+        <span class="code-keyword">if</span> (<span class="code-keyword">this</span>.results.length < <span class="code-number">5</span>) <span class="code-keyword">return</span> <span class="code-string">'Not enough data'</span>;
+
+        <span class="code-keyword">const</span> recent5 = <span class="code-keyword">this</span>.results.<span class="code-function">slice</span>(<span class="code-number">-5</span>);
+        <span class="code-keyword">const</span> passRates = recent5.<span class="code-function">map</span>(<span class="code-variable">r</span> => (r.passed / r.totalTests) * <span class="code-number">100</span>);
+
+        <span class="code-keyword">const</span> trend = passRates[passRates.length - <span class="code-number">1</span>] - passRates[<span class="code-number">0</span>];
+        <span class="code-keyword">if</span> (trend > <span class="code-number">5</span>) <span class="code-keyword">return</span> <span class="code-string">'📈 Improving'</span>;
+        <span class="code-keyword">if</span> (trend < <span class="code-number">-5</span>) <span class="code-keyword">return</span> <span class="code-string">'📉 Declining'</span>;
+        <span class="code-keyword">return</span> <span class="code-string">'➡️ Stable'</span>;
+    }
+
+    <span class="code-comment">// Identify tests that fail most frequently</span>
+    <span class="code-function">getMostFailedTests</span>() {
+        <span class="code-keyword">const</span> failureCount = {};
+
+        <span class="code-keyword">this</span>.results.<span class="code-function">forEach</span>(<span class="code-variable">run</span> => {
+            run.failedTests.<span class="code-function">forEach</span>(<span class="code-variable">testName</span> => {
+                failureCount[testName] = (failureCount[testName] || <span class="code-number">0</span>) + <span class="code-number">1</span>;
+            });
+        });
+
+        <span class="code-keyword">return</span> <span class="code-built-in">Object</span>.<span class="code-function">entries</span>(failureCount)
+            .<span class="code-function">sort</span>(([, <span class="code-variable">a</span>], [, <span class="code-variable">b</span>]) => b - a)
+            .<span class="code-function">slice</span>(<span class="code-number">0</span>, <span class="code-number">5</span>)
+            .<span class="code-function">map</span>(([<span class="code-variable">name</span>, <span class="code-variable">count</span>]) => ({ name, count }));
+    }
+
+    <span class="code-comment">// Clear all test history</span>
+    <span class="code-function">reset</span>() {
+        <span class="code-keyword">this</span>.results = [];
+        <span class="code-built-in">localStorage</span>.<span class="code-function">removeItem</span>(<span class="code-constant">TEST_RESULTS_KEY</span>);
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-string">'🗑️ Test results cleared'</span>);
+    }
+
+    <span class="code-comment">// Generate detailed test report</span>
+    <span class="code-function">generateReport</span>() {
+        <span class="code-keyword">const</span> stats = <span class="code-keyword">this</span>.<span class="code-function">getStats</span>();
+
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-string">'📊 Test Results Summary'</span>);
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-string">'======================'</span>);
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-template">`Total Runs: ${stats.totalRuns}`</span>);
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-template">`Average Pass Rate: ${stats.averagePassRate.toFixed(2)}%`</span>);
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-template">`Trend: ${stats.trend}`</span>);
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-string">'\nLatest Coverage:'</span>);
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-template">`  Lines: ${stats.latestRun.coverage.lines}%`</span>);
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-template">`  Branches: ${stats.latestRun.coverage.branches}%`</span>);
+        <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-template">`  Functions: ${stats.latestRun.coverage.functions}%`</span>);
+
+        <span class="code-keyword">if</span> (stats.mostFailedTests.length > <span class="code-number">0</span>) {
+            <span class="code-built-in">console</span>.<span class="code-function">log</span>(<span class="code-string">'\nMost Failed Tests:'</span>);
+            <span class="code-built-in">console</span>.<span class="code-function">table</span>(stats.mostFailedTests);
+        }
+
+        <span class="code-keyword">return</span> stats;
+    }
+}
+
+<span class="code-comment">// Usage example</span>
+<span class="code-keyword">const</span> testTracker = <span class="code-keyword">new</span> <span class="code-class">TestResultsTracker</span>();
+
+<span class="code-comment">// Record a test run with complete data</span>
+testTracker.<span class="code-function">recordTestRun</span>({
+    <span class="code-property">totalTests</span>: <span class="code-number">25</span>,
+    <span class="code-property">passed</span>: <span class="code-number">23</span>,
+    <span class="code-property">failed</span>: <span class="code-number">2</span>,
+    <span class="code-property">skipped</span>: <span class="code-number">0</span>,
+    <span class="code-property">duration</span>: <span class="code-number">3500</span>,
+    <span class="code-property">coverage</span>: {
+        <span class="code-property">lines</span>: <span class="code-number">87.5</span>,
+        <span class="code-property">branches</span>: <span class="code-number">82.3</span>,
+        <span class="code-property">functions</span>: <span class="code-number">90.1</span>,
+        <span class="code-property">statements</span>: <span class="code-number">85.7</span>
+    },
+    <span class="code-property">failedTests</span>: [<span class="code-string">'POST /api/users - should validate email'</span>, <span class="code-string">'DELETE /api/users/:id - should return 404'</span>]
+});
+
+<span class="code-comment">// Generate and view comprehensive report</span>
+testTracker.<span class="code-function">generateReport</span>();
+</code></pre>
+    </div>
+</div>
+
+<!-- CODE BLOCK 5: Final Project Solution Outline -->
+<h4>🏋️ Final Project: Complete RESTful API</h4>
+<details>
+    <summary>✅ Solution Outline</summary>
+    <div class="code-block">
+        <div class="code-header">
+            <span>Project Structure</span>
+            <button class="copy-btn" onclick="copyCode(this, 'solution-d7')">Copy</button>
+        </div>
+        <pre><code id="solution-d7" class="language-plaintext" data-type="project-structure"><span class="code-comment">// Complete Task Management API - Project Structure</span>
+task-management-api/
+├── src/
+│   ├── routes/
+│   │   ├── auth.js          <span class="code-comment"># Authentication routes (register, login)</span>
+│   │   └── tasks.js         <span class="code-comment"># Task CRUD routes</span>
+│   ├── middleware/
+│   │   ├── auth.js          <span class="code-comment"># JWT verification middleware</span>
+│   │   ├── rateLimit.js     <span class="code-comment"># Rate limiting (100 req/15min)</span>
+│   │   ├── cache.js         <span class="code-comment"># Redis caching for GET requests</span>
+│   │   └── errorHandler.js  <span class="code-comment"># Centralized error handling</span>
+│   ├── models/
+│   │   └── task.js          <span class="code-comment"># Task data model and validation</span>
+│   ├── utils/
+│   │   └── validation.js    <span class="code-comment"># Input validation with Joi</span>
+│   └── server.js            <span class="code-comment"># Main Express application</span>
+├── tests/
+│   ├── auth.test.js         <span class="code-comment"># Authentication endpoint tests</span>
+│   └── tasks.test.js        <span class="code-comment"># Task endpoint tests</span>
+├── .github/workflows/
+│   └── ci.yml               <span class="code-comment"># CI/CD pipeline configuration</span>
+├── package.json             <span class="code-comment"># Dependencies and scripts</span>
+├── .env.example             <span class="code-comment"># Environment variable template</span>
+└── README.md                <span class="code-comment"># Project documentation</span>
+
+<span class="code-comment">// ============================================================
+// Key Features Implementation
+// ============================================================</span>
+
+<span class="code-comment">// 1. Task Model Schema</span>
+<span class="code-keyword">const</span> taskSchema = {
+    <span class="code-property">id</span>: <span class="code-built-in">Number</span>,                   <span class="code-comment">// Auto-incremented ID</span>
+    <span class="code-property">title</span>: <span class="code-built-in">String</span>,                <span class="code-comment">// Task title (required)</span>
+    <span class="code-property">description</span>: <span class="code-built-in">String</span>,         <span class="code-comment">// Task description (optional)</span>
+    <span class="code-property">status</span>: [<span class="code-string">'pending'</span>, <span class="code-string">'in-progress'</span>, <span class="code-string">'completed'</span>], <span class="code-comment">// Task status</span>
+    <span class="code-property">priority</span>: [<span class="code-string">'low'</span>, <span class="code-string">'medium'</span>, <span class="code-string">'high'</span>],          <span class="code-comment">// Priority level</span>
+    <span class="code-property">userId</span>: <span class="code-built-in">Number</span>,               <span class="code-comment">// User who owns the task</span>
+    <span class="code-property">dueDate</span>: <span class="code-built-in">Date</span>,               <span class="code-comment">// Due date (optional)</span>
+    <span class="code-property">createdAt</span>: <span class="code-built-in">Date</span>,             <span class="code-comment">// Creation timestamp</span>
+    <span class="code-property">updatedAt</span>: <span class="code-built-in">Date</span>              <span class="code-comment">// Last update timestamp</span>
+};
+
+<span class="code-comment">// 2. API Endpoints Reference</span>
+<span class="code-comment">/*
+  POST   /api/auth/register    - Register new user
+  POST   /api/auth/login       - Login and get JWT token
+  GET    /api/tasks            - Get all user's tasks (cached, paginated)
+  GET    /api/tasks/:id        - Get specific task by ID
+  POST   /api/tasks            - Create new task (requires auth)
+  PUT    /api/tasks/:id        - Update entire task (requires auth)
+  PATCH  /api/tasks/:id/status - Update only task status (requires auth)
+  DELETE /api/tasks/:id        - Delete task (requires auth)
+*/</span>
+
+<span class="code-comment">// 3. Environment Variables (.env)</span>
+<span class="code-comment">/*
+  PORT=3000
+  NODE_ENV=production
+  JWT_SECRET=your-secret-key-here
+  REDIS_URL=redis://localhost:6379
+  DATABASE_URL=postgresql://user:pass@host:5432/db
+*/</span>
+
+<span class="code-comment">// 4. Testing Strategy</span>
+<span class="code-comment">/*
+  - Unit tests for validation functions (Joi schemas)
+  - Integration tests for all API endpoints
+  - Authentication flow tests (register, login, protected routes)
+  - Rate limiting tests (verify 100 req/15min limit)
+  - Cache invalidation tests (verify Redis caching)
+  - Error handling tests (4xx and 5xx responses)
+  - Coverage target: 80%+ (lines, branches, functions)
+*/</span>
+
+<span class="code-comment">// 5. Deployment Checklist</span>
+<span class="code-comment">/*
+  ✓ Environment variables configured on platform
+  ✓ Database migrations executed
+  ✓ Redis instance connected and tested
+  ✓ Health check endpoint (/health) implemented
+  ✓ CORS configured for allowed origins
+  ✓ HTTPS enforced in production
+  ✓ Rate limiting enabled globally
+  ✓ Structured logging configured (Winston/Morgan)
+  ✓ Error monitoring (Sentry/LogRocket)
+  ✓ API documentation published (Swagger UI)
+*/</span>
+
+<span class="code-comment">// 6. NPM Dependencies</span>
+<span class="code-comment">// Install production dependencies:</span>
+<span class="code-comment">// npm install express jsonwebtoken bcryptjs redis express-rate-limit joi
+//              swagger-jsdoc swagger-ui-express cors helmet morgan</span>
+
+<span class="code-comment">// Install development dependencies:</span>
+<span class="code-comment">// npm install --save-dev jest supertest eslint nodemon</span>
+
+<span class="code-comment">// 7. Deployment Commands</span>
+<span class="code-comment">// Heroku:  git push heroku main</span>
+<span class="code-comment">// Vercel:  vercel --prod</span>
+<span class="code-comment">// Railway: railway up</span>
+</code></pre>
+    </div>
+</details>
+
+<!-- ============================================================ -->
+<!-- END OF DAY 7 ENHANCED CODE BLOCKS -->
+<!-- ============================================================ -->

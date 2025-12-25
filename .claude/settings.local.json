@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(node build/build.js:*)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}

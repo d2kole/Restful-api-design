@@ -1,0 +1,836 @@
+<div id="day7" class="day-content">
+    <h2>📘 Day 7: API Documentation, Testing & Deployment</h2>
+
+    <div class="objectives">
+        <h3>🎯 Learning Objectives</h3>
+        <ul>
+            <li>Create comprehensive API documentation with OpenAPI/Swagger</li>
+            <li>Write automated tests for API endpoints</li>
+            <li>Implement integration testing with Jest and Supertest</li>
+            <li>Deploy API to production (Heroku, Vercel, Railway)</li>
+            <li>Set up CI/CD with GitHub Actions</li>
+        </ul>
+    </div>
+
+    <h3>📚 Core Concepts</h3>
+
+    <div class="concept-grid">
+        <div class="concept-card">
+            <h4>📖 OpenAPI/Swagger</h4>
+            <p>Industry-standard specification for documenting REST APIs. Generate interactive docs and client SDKs automatically.</p>
+        </div>
+        <div class="concept-card">
+            <h4>🧪 Automated Testing</h4>
+            <p>Write unit and integration tests with Jest/Supertest. Test endpoints, status codes, response formats automatically.</p>
+        </div>
+        <div class="concept-card">
+            <h4>🚀 CI/CD</h4>
+            <p>Continuous Integration/Deployment with GitHub Actions. Automatically test and deploy on every commit.</p>
+        </div>
+        <div class="concept-card">
+            <h4>🌐 Production Deploy</h4>
+            <p>Deploy to cloud platforms (Heroku, Vercel, Railway). Configure environment variables and monitoring.</p>
+        </div>
+    </div>
+
+    <h3>💻 Code Examples</h3>
+
+    <h4>1. OpenAPI/Swagger Documentation</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Swagger Setup (npm install swagger-jsdoc swagger-ui-express)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d7-1')">Copy</button>
+        </div>
+        <pre><code id="code-d7-1">const express = require('express');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
+const app = express();
+app.use(express.json());
+
+// Swagger configuration
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'RESTful API Learning Module',
+            version: '1.0.0',
+            description: 'A complete REST API with authentication, caching, and rate limiting',
+            contact: {
+                name: 'API Support',
+                email: 'support@example.com'
+            }
+        },
+        servers: [
+            {
+                url: 'http://localhost:3000',
+                description: 'Development server'
+            },
+            {
+                url: 'https://api.production.com',
+                description: 'Production server'
+            }
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT'
+                }
+            },
+            schemas: {
+                User: {
+                    type: 'object',
+                    required: ['name', 'email'],
+                    properties: {
+                        id: {
+                            type: 'integer',
+                            description: 'User ID',
+                            example: 1
+                        },
+                        name: {
+                            type: 'string',
+                            description: 'User name',
+                            example: 'Alice Johnson'
+                        },
+                        email: {
+                            type: 'string',
+                            format: 'email',
+                            description: 'User email',
+                            example: 'alice@example.com'
+                        }
+                    }
+                },
+                Error: {
+                    type: 'object',
+                    properties: {
+                        error: {
+                            type: 'string',
+                            example: 'Not found'
+                        },
+                        message: {
+                            type: 'string',
+                            example: 'Resource not found'
+                        }
+                    }
+                }
+            }
+        }
+    },
+    apis: ['./routes/*.js', './server.js'] // Path to API docs
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// Serve swagger docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Sample data
+let users = [
+    { id: 1, name: 'Alice', email: 'alice@example.com' }
+];
+
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get all users
+ *     description: Retrieve a list of all users
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: A list of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ */
+app.get('/api/users', (req, res) => {
+    res.json(users);
+});
+
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get user by ID
+ *     description: Retrieve a single user by their ID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.get('/api/users/:id', (req, res) => {
+    const user = users.find(u => u.id === parseInt(req.params.id));
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+});
+
+/**
+ * @swagger
+ * /api/users:
+ *   post:
+ *     summary: Create new user
+ *     description: Create a new user with name and email
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Bob Smith
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: bob@example.com
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Invalid input
+ */
+app.post('/api/users', (req, res) => {
+    const { name, email } = req.body;
+    if (!name || !email) {
+        return res.status(400).json({ error: 'Name and email required' });
+    }
+    const newUser = { id: users.length + 1, name, email };
+    users.push(newUser);
+    res.status(201).json(newUser);
+});
+
+app.listen(3000, () => {
+    console.log('API running on port 3000');
+    console.log('Swagger docs available at http://localhost:3000/api-docs');
+});
+</code></pre>
+    </div>
+
+    <h4>2. Automated Testing with Jest & Supertest</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - API Tests (npm install --save-dev jest supertest)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d7-2')">Copy</button>
+        </div>
+        <pre><code id="code-d7-2">// api.test.js
+const request = require('supertest');
+const express = require('express');
+
+// Create test app
+const createApp = () => {
+    const app = express();
+    app.use(express.json());
+
+    let users = [
+        { id: 1, name: 'Alice', email: 'alice@example.com' },
+        { id: 2, name: 'Bob', email: 'bob@example.com' }
+    ];
+
+    app.get('/api/users', (req, res) => {
+        res.json(users);
+    });
+
+    app.get('/api/users/:id', (req, res) => {
+        const user = users.find(u => u.id === parseInt(req.params.id));
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    });
+
+    app.post('/api/users', (req, res) => {
+        const { name, email } = req.body;
+        if (!name || !email) {
+            return res.status(400).json({ error: 'Name and email required' });
+        }
+        const newUser = { id: users.length + 1, name, email };
+        users.push(newUser);
+        res.status(201).json(newUser);
+    });
+
+    app.delete('/api/users/:id', (req, res) => {
+        const index = users.findIndex(u => u.id === parseInt(req.params.id));
+        if (index === -1) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        users.splice(index, 1);
+        res.status(204).send();
+    });
+
+    return app;
+};
+
+describe('Users API', () => {
+    let app;
+
+    beforeEach(() => {
+        app = createApp();
+    });
+
+    describe('GET /api/users', () => {
+        it('should return all users', async () => {
+            const response = await request(app)
+                .get('/api/users')
+                .expect('Content-Type', /json/)
+                .expect(200);
+
+            expect(response.body).toBeInstanceOf(Array);
+            expect(response.body.length).toBeGreaterThan(0);
+            expect(response.body[0]).toHaveProperty('id');
+            expect(response.body[0]).toHaveProperty('name');
+            expect(response.body[0]).toHaveProperty('email');
+        });
+    });
+
+    describe('GET /api/users/:id', () => {
+        it('should return a user by ID', async () => {
+            const response = await request(app)
+                .get('/api/users/1')
+                .expect(200);
+
+            expect(response.body).toHaveProperty('id', 1);
+            expect(response.body).toHaveProperty('name');
+            expect(response.body).toHaveProperty('email');
+        });
+
+        it('should return 404 for non-existent user', async () => {
+            const response = await request(app)
+                .get('/api/users/999')
+                .expect(404);
+
+            expect(response.body).toHaveProperty('error');
+        });
+    });
+
+    describe('POST /api/users', () => {
+        it('should create a new user', async () => {
+            const newUser = {
+                name: 'Charlie',
+                email: 'charlie@example.com'
+            };
+
+            const response = await request(app)
+                .post('/api/users')
+                .send(newUser)
+                .expect('Content-Type', /json/)
+                .expect(201);
+
+            expect(response.body).toHaveProperty('id');
+            expect(response.body.name).toBe(newUser.name);
+            expect(response.body.email).toBe(newUser.email);
+        });
+
+        it('should return 400 if name is missing', async () => {
+            const response = await request(app)
+                .post('/api/users')
+                .send({ email: 'test@example.com' })
+                .expect(400);
+
+            expect(response.body).toHaveProperty('error');
+        });
+
+        it('should return 400 if email is missing', async () => {
+            const response = await request(app)
+                .post('/api/users')
+                .send({ name: 'Test User' })
+                .expect(400);
+
+            expect(response.body).toHaveProperty('error');
+        });
+    });
+
+    describe('DELETE /api/users/:id', () => {
+        it('should delete a user', async () => {
+            await request(app)
+                .delete('/api/users/1')
+                .expect(204);
+
+            // Verify user is deleted
+            await request(app)
+                .get('/api/users/1')
+                .expect(404);
+        });
+
+        it('should return 404 for non-existent user', async () => {
+            await request(app)
+                .delete('/api/users/999')
+                .expect(404);
+        });
+    });
+});
+
+// Run tests with: npm test
+</code></pre>
+    </div>
+
+    <h4>3. GitHub Actions CI/CD Pipeline</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>YAML - GitHub Actions Workflow (.github/workflows/ci.yml)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d7-3')">Copy</button>
+        </div>
+        <pre><code id="code-d7-3">name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run linter
+      run: npm run lint
+
+    - name: Run tests
+      run: npm test
+
+    - name: Run tests with coverage
+      run: npm run test:coverage
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy to Heroku
+      uses: akhileshns/heroku-deploy@v3.12.14
+      with:
+        heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+        heroku_app_name: "your-app-name"
+        heroku_email: "your-email@example.com"
+
+    - name: Deploy to Vercel
+      uses: amondnet/vercel-action@v20
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+
+    - name: Notify deployment
+      run: |
+        echo "Deployment successful!"
+        echo "API URL: https://your-app-name.herokuapp.com"
+</code></pre>
+    </div>
+
+    <div class="storage-demo">
+        <h4>💾 localStorage Practical: Test Results Tracker</h4>
+        <p>Track your testing progress and test coverage over time:</p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Test Results Tracker</span>
+                <button class="copy-btn" onclick="copyCode(this, 'storage-d7')">Copy</button>
+            </div>
+            <pre><code id="storage-d7">// Test Results Tracker - Monitor testing progress
+const TEST_RESULTS_KEY = 'day7_test_results';
+const MAX_HISTORY = 50;
+
+class TestResultsTracker {
+    constructor() {
+        this.results = this.loadResults();
+    }
+
+    loadResults() {
+        const data = localStorage.getItem(TEST_RESULTS_KEY);
+        return data ? JSON.parse(data) : [];
+    }
+
+    saveResults() {
+        if (this.results.length > MAX_HISTORY) {
+            this.results = this.results.slice(-MAX_HISTORY);
+        }
+        localStorage.setItem(TEST_RESULTS_KEY, JSON.stringify(this.results));
+    }
+
+    // Record test run results
+    recordTestRun(data) {
+        const result = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            totalTests: data.totalTests || 0,
+            passed: data.passed || 0,
+            failed: data.failed || 0,
+            skipped: data.skipped || 0,
+            duration: data.duration || 0,
+            coverage: {
+                lines: data.coverage?.lines || 0,
+                branches: data.coverage?.branches || 0,
+                functions: data.coverage?.functions || 0,
+                statements: data.coverage?.statements || 0
+            },
+            failedTests: data.failedTests || []
+        };
+
+        this.results.push(result);
+        this.saveResults();
+
+        console.log(`✅ Test run recorded: ${result.passed}/${result.totalTests} passed`);
+        return result;
+    }
+
+    // Get statistics
+    getStats() {
+        if (this.results.length === 0) {
+            return { noData: true };
+        }
+
+        const latestRun = this.results[this.results.length - 1];
+        const totalRuns = this.results.length;
+
+        const averageCoverage = {
+            lines: this.average('coverage.lines'),
+            branches: this.average('coverage.branches'),
+            functions: this.average('coverage.functions'),
+            statements: this.average('coverage.statements')
+        };
+
+        const passRate = this.results.map(r =>
+            (r.passed / r.totalTests) * 100
+        );
+
+        return {
+            totalRuns,
+            latestRun,
+            averagePassRate: this.arrayAverage(passRate),
+            averageCoverage,
+            trend: this.calculateTrend(),
+            mostFailedTests: this.getMostFailedTests()
+        };
+    }
+
+    average(path) {
+        const values = this.results.map(r => {
+            const parts = path.split('.');
+            let value = r;
+            for (const part of parts) {
+                value = value[part];
+            }
+            return value;
+        });
+        return this.arrayAverage(values);
+    }
+
+    arrayAverage(arr) {
+        return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    calculateTrend() {
+        if (this.results.length < 5) return 'Not enough data';
+
+        const recent5 = this.results.slice(-5);
+        const passRates = recent5.map(r => (r.passed / r.totalTests) * 100);
+
+        const trend = passRates[passRates.length - 1] - passRates[0];
+        if (trend > 5) return '📈 Improving';
+        if (trend < -5) return '📉 Declining';
+        return '➡️ Stable';
+    }
+
+    getMostFailedTests() {
+        const failureCount = {};
+
+        this.results.forEach(run => {
+            run.failedTests.forEach(testName => {
+                failureCount[testName] = (failureCount[testName] || 0) + 1;
+            });
+        });
+
+        return Object.entries(failureCount)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 5)
+            .map(([name, count]) => ({ name, count }));
+    }
+
+    // Clear history
+    reset() {
+        this.results = [];
+        localStorage.removeItem(TEST_RESULTS_KEY);
+        console.log('🗑️ Test results cleared');
+    }
+
+    // Generate test report
+    generateReport() {
+        const stats = this.getStats();
+
+        console.log('📊 Test Results Summary');
+        console.log('======================');
+        console.log(`Total Runs: ${stats.totalRuns}`);
+        console.log(`Average Pass Rate: ${stats.averagePassRate.toFixed(2)}%`);
+        console.log(`Trend: ${stats.trend}`);
+        console.log('\nLatest Coverage:');
+        console.log(`  Lines: ${stats.latestRun.coverage.lines}%`);
+        console.log(`  Branches: ${stats.latestRun.coverage.branches}%`);
+        console.log(`  Functions: ${stats.latestRun.coverage.functions}%`);
+
+        if (stats.mostFailedTests.length > 0) {
+            console.log('\nMost Failed Tests:');
+            console.table(stats.mostFailedTests);
+        }
+
+        return stats;
+    }
+}
+
+// Usage
+const testTracker = new TestResultsTracker();
+
+// Record a test run
+testTracker.recordTestRun({
+    totalTests: 25,
+    passed: 23,
+    failed: 2,
+    skipped: 0,
+    duration: 3500,
+    coverage: {
+        lines: 87.5,
+        branches: 82.3,
+        functions: 90.1,
+        statements: 85.7
+    },
+    failedTests: ['POST /api/users - should validate email', 'DELETE /api/users/:id - should return 404']
+});
+
+// View report
+testTracker.generateReport();
+</code></pre>
+        </div>
+    </div>
+
+    <div class="exercise">
+        <h4>🏋️ Final Project: Complete RESTful API</h4>
+        <p><strong>Scenario:</strong> Build a complete, production-ready Task Management API.</p>
+        <p><strong>Requirements:</strong></p>
+        <ul>
+            <li>Full CRUD operations for tasks (create, read, update, delete)</li>
+            <li>JWT authentication and authorization</li>
+            <li>Input validation and error handling</li>
+            <li>Rate limiting (100 requests per 15 minutes)</li>
+            <li>Caching with Redis for GET requests</li>
+            <li>Complete OpenAPI/Swagger documentation</li>
+            <li>Automated tests with 80%+ coverage</li>
+            <li>Deploy to Heroku or Vercel</li>
+        </ul>
+
+        <details>
+            <summary>💡 Planning Tips</summary>
+            <p>Break the project into phases: 1) Basic CRUD, 2) Authentication, 3) Performance features, 4) Documentation, 5) Testing, 6) Deployment. Use all concepts learned over 7 days.</p>
+        </details>
+
+        <details>
+            <summary>✅ Solution Outline</summary>
+            <div class="code-block">
+                <div class="code-header">
+                    <span>Project Structure</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'solution-d7')">Copy</button>
+                </div>
+                <pre><code id="solution-d7">task-management-api/
+├── src/
+│   ├── routes/
+│   │   ├── auth.js          # Authentication routes
+│   │   └── tasks.js         # Task CRUD routes
+│   ├── middleware/
+│   │   ├── auth.js          # JWT verification
+│   │   ├── rateLimit.js     # Rate limiting
+│   │   ├── cache.js         # Redis caching
+│   │   └── errorHandler.js  # Error handling
+│   ├── models/
+│   │   └── task.js          # Task data model
+│   ├── utils/
+│   │   └── validation.js    # Input validation
+│   └── server.js            # Main app file
+├── tests/
+│   ├── auth.test.js
+│   └── tasks.test.js
+├── .github/workflows/
+│   └── ci.yml               # CI/CD pipeline
+├── package.json
+├── .env.example
+└── README.md
+
+// Key Features Implementation:
+
+// 1. Task Model
+const taskSchema = {
+    id: Number,
+    title: String,
+    description: String,
+    status: ['pending', 'in-progress', 'completed'],
+    priority: ['low', 'medium', 'high'],
+    userId: Number,
+    dueDate: Date,
+    createdAt: Date,
+    updatedAt: Date
+};
+
+// 2. API Endpoints
+/*
+  POST   /api/auth/register    - Register new user
+  POST   /api/auth/login       - Login user
+  GET    /api/tasks            - Get all user's tasks (cached)
+  GET    /api/tasks/:id        - Get task by ID
+  POST   /api/tasks            - Create new task
+  PUT    /api/tasks/:id        - Update task
+  PATCH  /api/tasks/:id/status - Update task status only
+  DELETE /api/tasks/:id        - Delete task
+*/
+
+// 3. Environment Variables (.env)
+/*
+  PORT=3000
+  NODE_ENV=production
+  JWT_SECRET=your-secret-key
+  REDIS_URL=redis://localhost:6379
+  DATABASE_URL=postgresql://...
+*/
+
+// 4. Testing Strategy
+/*
+  - Unit tests for validation functions
+  - Integration tests for all API endpoints
+  - Authentication flow tests
+  - Rate limiting tests
+  - Cache invalidation tests
+  - Error handling tests
+*/
+
+// 5. Deployment Checklist
+/*
+  ✓ Environment variables configured
+  ✓ Database migrations run
+  ✓ Redis instance connected
+  ✓ Health check endpoint (/health)
+  ✓ CORS configured
+  ✓ HTTPS enforced
+  ✓ Rate limiting enabled
+  ✓ Logging configured
+  ✓ Error monitoring (Sentry)
+  ✓ API documentation published
+*/
+
+// Start with: npm install express jsonwebtoken bcryptjs redis
+//              express-rate-limit joi swagger-jsdoc swagger-ui-express
+// Test with:   npm install --save-dev jest supertest
+// Deploy:      git push heroku main OR vercel --prod
+</code></pre>
+            </div>
+            <p><strong>Next Steps:</strong> Implement each feature incrementally, write tests as you go, and deploy early to catch issues.</p>
+        </details>
+    </div>
+
+    <div class="quiz">
+        <h3>✅ Check Your Knowledge</h3>
+
+        <div class="quiz-question">
+            <p><strong>Q1:</strong> What is the standard specification for documenting REST APIs?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d7q1" value="a"> A) GraphQL Schema</label>
+                <label><input type="radio" name="d7q1" value="b"> B) OpenAPI (Swagger)</label>
+                <label><input type="radio" name="d7q1" value="c"> C) Markdown</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d7q1', 'b', 'd7q1-fb')">Check Answer</button>
+            <div class="feedback" id="d7q1-fb"></div>
+        </div>
+
+        <div class="quiz-question">
+            <p><strong>Q2:</strong> Which tool is commonly used for API integration testing in Node.js?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d7q2" value="a"> A) Postman only</label>
+                <label><input type="radio" name="d7q2" value="b"> B) Jest with Supertest</label>
+                <label><input type="radio" name="d7q2" value="c"> C) Selenium</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d7q2', 'b', 'd7q2-fb')">Check Answer</button>
+            <div class="feedback" id="d7q2-fb"></div>
+        </div>
+
+        <div class="quiz-question">
+            <p><strong>Q3:</strong> What does CI/CD stand for?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d7q3" value="a"> A) Code Integration / Code Delivery</label>
+                <label><input type="radio" name="d7q3" value="b"> B) Continuous Integration / Continuous Deployment</label>
+                <label><input type="radio" name="d7q3" value="c"> C) Central Intelligence / Central Development</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d7q3', 'b', 'd7q3-fb')">Check Answer</button>
+            <div class="feedback" id="d7q3-fb"></div>
+        </div>
+    </div>
+
+    <div class="takeaways">
+        <h3>🎯 Final Course Takeaways</h3>
+        <ul>
+            <li><strong>Day 1-2:</strong> REST fundamentals, HTTP methods, resource design, URL patterns</li>
+            <li><strong>Day 3-4:</strong> Error handling, status codes, authentication, authorization with JWT</li>
+            <li><strong>Day 5-6:</strong> API versioning, performance optimization, caching, rate limiting</li>
+            <li><strong>Day 7:</strong> Documentation with Swagger, automated testing, CI/CD, deployment</li>
+        </ul>
+        <p><strong>🎉 Congratulations!</strong> You've completed the 7-day RESTful API Design course. You now have the skills to build production-ready REST APIs with Express.js!</p>
+        <p><strong>Next Steps:</strong></p>
+        <ul>
+            <li>Complete the final project (Task Management API)</li>
+            <li>Deploy your API to a cloud platform</li>
+            <li>Explore advanced topics: GraphQL, WebSockets, Microservices</li>
+            <li>Build your portfolio with real-world API projects</li>
+        </ul>
+    </div>
+
+    <button class="complete-day" onclick="completeDay(7)">✓ Mark Day 7 Complete 🎉</button>
+</div>

@@ -1,0 +1,681 @@
+<div id="day6" class="day-content">
+    <h2>📘 Day 6: Performance & Optimization</h2>
+
+    <div class="objectives">
+        <h3>🎯 Learning Objectives</h3>
+        <ul>
+            <li>Implement caching strategies with Redis and HTTP cache headers</li>
+            <li>Optimize database queries and use connection pooling</li>
+            <li>Add rate limiting to prevent abuse</li>
+            <li>Use compression and pagination for large datasets</li>
+            <li>Monitor and measure API performance</li>
+        </ul>
+    </div>
+
+    <h3>📚 Core Concepts</h3>
+
+    <div class="concept-grid">
+        <div class="concept-card">
+            <h4>🗄️ Caching</h4>
+            <p>Store frequently accessed data in memory (Redis) or use HTTP cache headers (ETag, Cache-Control) to reduce server load.</p>
+        </div>
+        <div class="concept-card">
+            <h4>⚡ Rate Limiting</h4>
+            <p>Limit requests per user/IP to prevent abuse. Use sliding windows, token buckets, or fixed windows strategies.</p>
+        </div>
+        <div class="concept-card">
+            <h4>🔍 Query Optimization</h4>
+            <p>Use indexes, select only needed fields, avoid N+1 queries, implement connection pooling for database efficiency.</p>
+        </div>
+        <div class="concept-card">
+            <h4>📦 Compression</h4>
+            <p>Use gzip/brotli compression to reduce response size. Implement pagination for large collections.</p>
+        </div>
+    </div>
+
+    <h3>💻 Code Examples</h3>
+
+    <h4>1. Redis Caching Implementation</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Redis Cache (npm install redis)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d6-1')">Copy</button>
+        </div>
+        <pre><code id="code-d6-1">const express = require('express');
+const redis = require('redis');
+const app = express();
+
+// Create Redis client
+const redisClient = redis.createClient({
+    host: 'localhost',
+    port: 6379
+});
+
+redisClient.on('error', (err) => console.error('Redis error:', err));
+redisClient.connect();
+
+// Cache middleware
+const cacheMiddleware = (duration) => {
+    return async (req, res, next) => {
+        const key = `cache:${req.originalUrl}`;
+
+        try {
+            // Check cache
+            const cachedData = await redisClient.get(key);
+
+            if (cachedData) {
+                console.log('✅ Cache hit');
+                return res.json({
+                    cached: true,
+                    data: JSON.parse(cachedData)
+                });
+            }
+
+            // Cache miss - store original res.json
+            const originalJson = res.json.bind(res);
+
+            res.json = (data) => {
+                // Store in cache
+                redisClient.setEx(key, duration, JSON.stringify(data))
+                    .catch(err => console.error('Cache error:', err));
+
+                originalJson(data);
+            };
+
+            next();
+        } catch (error) {
+            console.error('Cache middleware error:', error);
+            next();
+        }
+    };
+};
+
+// Sample expensive operation
+const getExpensiveData = async () => {
+    // Simulate database query or API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    return {
+        users: [
+            { id: 1, name: 'Alice', email: 'alice@example.com' },
+            { id: 2, name: 'Bob', email: 'bob@example.com' }
+        ],
+        timestamp: new Date().toISOString()
+    };
+};
+
+// Route with 60-second cache
+app.get('/api/users', cacheMiddleware(60), async (req, res) => {
+    console.log('🔍 Fetching data from source...');
+    const data = await getExpensiveData();
+    res.json(data);
+});
+
+// Manual cache invalidation
+app.post('/api/users', async (req, res) => {
+    // Create user logic here...
+
+    // Invalidate cache
+    await redisClient.del('cache:/api/users');
+    console.log('🗑️ Cache invalidated');
+
+    res.status(201).json({ message: 'User created' });
+});
+
+// Clear all cache
+app.post('/api/cache/clear', async (req, res) => {
+    const keys = await redisClient.keys('cache:*');
+    if (keys.length > 0) {
+        await redisClient.del(keys);
+    }
+    res.json({ message: `Cleared ${keys.length} cache entries` });
+});
+
+app.listen(3000, () => console.log('Cached API running'));
+</code></pre>
+    </div>
+
+    <h4>2. Rate Limiting with express-rate-limit</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Rate Limiting (npm install express-rate-limit)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d6-2')">Copy</button>
+        </div>
+        <pre><code id="code-d6-2">const express = require('express');
+const rateLimit = require('express-rate-limit');
+const app = express();
+app.use(express.json());
+
+// General rate limiter - 100 requests per 15 minutes
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    message: {
+        error: 'Too many requests',
+        message: 'You have exceeded the 100 requests in 15 minutes limit!',
+        retryAfter: '15 minutes'
+    },
+    standardHeaders: true, // Return rate limit info in headers
+    legacyHeaders: false,
+    handler: (req, res) => {
+        res.status(429).json({
+            error: 'Too Many Requests',
+            message: 'Rate limit exceeded. Please try again later.',
+            retryAfter: req.rateLimit.resetTime
+        });
+    }
+});
+
+// Strict limiter for auth endpoints - 5 attempts per 15 minutes
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    skipSuccessfulRequests: true, // Don't count successful requests
+    message: {
+        error: 'Too many login attempts',
+        message: 'Account temporarily locked. Try again in 15 minutes.'
+    }
+});
+
+// Custom rate limiter with Redis store
+const RedisStore = require('rate-limit-redis');
+const redis = require('redis');
+const redisClient = redis.createClient();
+
+const redisLimiter = rateLimit({
+    store: new RedisStore({
+        client: redisClient,
+        prefix: 'rate_limit:'
+    }),
+    windowMs: 60 * 1000, // 1 minute
+    max: 20 // 20 requests per minute per IP
+});
+
+// Apply general limiter to all routes
+app.use('/api/', generalLimiter);
+
+// Stricter limit for authentication
+app.post('/api/auth/login', authLimiter, (req, res) => {
+    // Login logic here
+    res.json({ message: 'Login successful' });
+});
+
+// Different limits for different user tiers
+const createTieredLimiter = (req, res, next) => {
+    const userTier = req.user?.tier || 'free';
+
+    const limits = {
+        free: { windowMs: 60 * 60 * 1000, max: 100 },    // 100/hour
+        premium: { windowMs: 60 * 60 * 1000, max: 1000 }, // 1000/hour
+        enterprise: { windowMs: 60 * 60 * 1000, max: 10000 } // 10000/hour
+    };
+
+    const limiter = rateLimit(limits[userTier]);
+    limiter(req, res, next);
+};
+
+app.get('/api/data', createTieredLimiter, (req, res) => {
+    res.json({ data: 'Your data here' });
+});
+
+// Rate limit status endpoint
+app.get('/api/rate-limit/status', (req, res) => {
+    res.json({
+        limit: req.rateLimit.limit,
+        remaining: req.rateLimit.remaining,
+        resetTime: new Date(req.rateLimit.resetTime)
+    });
+});
+
+app.listen(3000, () => console.log('Rate-limited API running'));
+</code></pre>
+    </div>
+
+    <h4>3. HTTP Cache Headers & ETags</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - HTTP Caching</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d6-3')">Copy</button>
+        </div>
+        <pre><code id="code-d6-3">const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+// Generate ETag from content
+const generateETag = (content) => {
+    return crypto
+        .createHash('md5')
+        .update(JSON.stringify(content))
+        .digest('hex');
+};
+
+// ETag middleware
+const etagMiddleware = (req, res, next) => {
+    const originalJson = res.json.bind(res);
+
+    res.json = (data) => {
+        const etag = generateETag(data);
+
+        // Set ETag header
+        res.set('ETag', etag);
+
+        // Check if client has cached version
+        const clientEtag = req.headers['if-none-match'];
+
+        if (clientEtag === etag) {
+            // Content hasn't changed
+            return res.status(304).end();
+        }
+
+        // Send new content
+        originalJson(data);
+    };
+
+    next();
+};
+
+app.use(etagMiddleware);
+
+// Cache-Control headers for different content types
+app.get('/api/static/config', (req, res) => {
+    // Cache for 1 hour, can be stale
+    res.set('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
+
+    res.json({
+        apiVersion: '2.0',
+        features: ['auth', 'caching', 'rate-limiting']
+    });
+});
+
+app.get('/api/users/:id', (req, res) => {
+    // Private cache, must revalidate
+    res.set('Cache-Control', 'private, max-age=300, must-revalidate');
+
+    const user = {
+        id: req.params.id,
+        name: 'Alice',
+        email: 'alice@example.com',
+        lastModified: '2024-01-15T10:00:00Z'
+    };
+
+    // Also set Last-Modified header
+    res.set('Last-Modified', new Date(user.lastModified).toUTCString());
+
+    // Check If-Modified-Since header
+    const ifModifiedSince = req.headers['if-modified-since'];
+    if (ifModifiedSince) {
+        const modifiedTime = new Date(user.lastModified).getTime();
+        const requestTime = new Date(ifModifiedSince).getTime();
+
+        if (modifiedTime <= requestTime) {
+            return res.status(304).end();
+        }
+    }
+
+    res.json(user);
+});
+
+// Never cache sensitive data
+app.get('/api/auth/session', (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    res.json({ sessionId: 'abc123', expiresAt: new Date() });
+});
+
+// Conditional GET with ETag
+app.get('/api/data', (req, res) => {
+    const data = { users: [], timestamp: Date.now() };
+    const etag = generateETag(data);
+
+    res.set('ETag', etag);
+    res.set('Cache-Control', 'max-age=60');
+
+    if (req.headers['if-none-match'] === etag) {
+        return res.status(304).end();
+    }
+
+    res.json(data);
+});
+
+app.listen(3000, () => console.log('HTTP cached API running'));
+</code></pre>
+    </div>
+
+    <div class="storage-demo">
+        <h4>💾 localStorage Practical: Client-Side Performance Tracking</h4>
+        <p>Monitor API performance and cache efficiency on the client:</p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Performance Monitor</span>
+                <button class="copy-btn" onclick="copyCode(this, 'storage-d6')">Copy</button>
+            </div>
+            <pre><code id="storage-d6">// Performance Tracker - Monitor API response times
+const PERF_KEY = 'day6_performance_metrics';
+const MAX_SAMPLES = 100;
+
+class PerformanceMonitor {
+    constructor() {
+        this.metrics = this.loadMetrics();
+    }
+
+    loadMetrics() {
+        const data = localStorage.getItem(PERF_KEY);
+        return data ? JSON.parse(data) : {
+            requests: [],
+            cacheHits: 0,
+            cacheMisses: 0
+        };
+    }
+
+    saveMetrics() {
+        // Keep only last 100 requests
+        if (this.metrics.requests.length > MAX_SAMPLES) {
+            this.metrics.requests = this.metrics.requests.slice(-MAX_SAMPLES);
+        }
+        localStorage.setItem(PERF_KEY, JSON.stringify(this.metrics));
+    }
+
+    // Wrap fetch to track performance
+    async trackedFetch(url, options = {}) {
+        const startTime = performance.now();
+        const startMark = `fetch-start-${Date.now()}`;
+        const endMark = `fetch-end-${Date.now()}`;
+
+        performance.mark(startMark);
+
+        try {
+            const response = await fetch(url, options);
+            performance.mark(endMark);
+
+            const duration = performance.now() - startTime;
+            const wasCached = response.headers.get('X-Cache') === 'HIT' ||
+                            response.status === 304;
+
+            // Track metrics
+            this.recordRequest({
+                url,
+                method: options.method || 'GET',
+                status: response.status,
+                duration,
+                cached: wasCached,
+                timestamp: new Date().toISOString(),
+                size: response.headers.get('Content-Length')
+            });
+
+            if (wasCached) {
+                this.metrics.cacheHits++;
+            } else {
+                this.metrics.cacheMisses++;
+            }
+
+            this.saveMetrics();
+            return response;
+
+        } catch (error) {
+            performance.mark(endMark);
+            const duration = performance.now() - startTime;
+
+            this.recordRequest({
+                url,
+                method: options.method || 'GET',
+                status: 'error',
+                duration,
+                error: error.message,
+                timestamp: new Date().toISOString()
+            });
+
+            this.saveMetrics();
+            throw error;
+        }
+    }
+
+    recordRequest(data) {
+        this.metrics.requests.push(data);
+    }
+
+    // Get performance statistics
+    getStats() {
+        const requests = this.metrics.requests;
+        const durations = requests.map(r => r.duration).filter(d => d);
+
+        const stats = {
+            totalRequests: requests.length,
+            cacheHitRate: this.metrics.cacheHits /
+                (this.metrics.cacheHits + this.metrics.cacheMisses) * 100,
+            averageResponseTime: durations.reduce((a, b) => a + b, 0) / durations.length,
+            p95: this.percentile(durations, 95),
+            p99: this.percentile(durations, 99),
+            slowestRequests: requests
+                .sort((a, b) => b.duration - a.duration)
+                .slice(0, 5),
+            errors: requests.filter(r => r.status === 'error').length
+        };
+
+        return stats;
+    }
+
+    percentile(arr, p) {
+        const sorted = [...arr].sort((a, b) => a - b);
+        const index = Math.ceil((p / 100) * sorted.length) - 1;
+        return sorted[index];
+    }
+
+    // Clear metrics
+    reset() {
+        this.metrics = { requests: [], cacheHits: 0, cacheMisses: 0 };
+        localStorage.removeItem(PERF_KEY);
+    }
+}
+
+// Usage
+const perfMonitor = new PerformanceMonitor();
+
+// Use instead of regular fetch
+async function getUsers() {
+    const response = await perfMonitor.trackedFetch('/api/users');
+    return response.json();
+}
+
+// View statistics
+console.log('Performance Stats:', perfMonitor.getStats());
+console.table(perfMonitor.metrics.requests.slice(-10));
+</code></pre>
+        </div>
+    </div>
+
+    <div class="exercise">
+        <h4>🏋️ Exercise: Implement Complete Caching Strategy</h4>
+        <p><strong>Scenario:</strong> You have a products API that gets hit frequently. Implement a multi-layer caching strategy.</p>
+        <p><strong>Task:</strong> Create an API with Redis caching, HTTP cache headers, and cache invalidation.</p>
+        <p><strong>Requirements:</strong></p>
+        <ul>
+            <li>GET /api/products - Cache for 5 minutes in Redis</li>
+            <li>Add ETag support for conditional requests</li>
+            <li>POST/PUT/DELETE should invalidate the cache</li>
+            <li>Include Cache-Control headers</li>
+        </ul>
+
+        <details>
+            <summary>💡 Hint</summary>
+            <p>Combine Redis middleware for server-side caching with ETag generation for client-side caching. Use cache invalidation on mutations.</p>
+        </details>
+
+        <details>
+            <summary>✅ Solution</summary>
+            <div class="code-block">
+                <div class="code-header">
+                    <span>JavaScript - Multi-Layer Caching Solution</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'solution-d6')">Copy</button>
+                </div>
+                <pre><code id="solution-d6">const express = require('express');
+const redis = require('redis');
+const crypto = require('crypto');
+const app = express();
+app.use(express.json());
+
+const redisClient = redis.createClient();
+redisClient.connect();
+
+let products = [
+    { id: 1, name: 'Laptop', price: 999, lastModified: Date.now() }
+];
+
+// Combined caching middleware
+const multiLayerCache = (duration) => {
+    return async (req, res, next) => {
+        const cacheKey = `cache:${req.originalUrl}`;
+
+        // Layer 1: Redis cache
+        try {
+            const cached = await redisClient.get(cacheKey);
+            if (cached) {
+                const data = JSON.parse(cached);
+                const etag = crypto.createHash('md5').update(cached).digest('hex');
+
+                res.set('ETag', etag);
+                res.set('X-Cache', 'HIT');
+                res.set('Cache-Control', `public, max-age=${duration}`);
+
+                // Layer 2: ETag validation
+                if (req.headers['if-none-match'] === etag) {
+                    return res.status(304).end();
+                }
+
+                return res.json(data);
+            }
+        } catch (error) {
+            console.error('Redis error:', error);
+        }
+
+        // Cache miss - intercept response
+        const originalJson = res.json.bind(res);
+        res.json = (data) => {
+            const content = JSON.stringify(data);
+            const etag = crypto.createHash('md5').update(content).digest('hex');
+
+            // Store in Redis
+            redisClient.setEx(cacheKey, duration, content);
+
+            // Set headers
+            res.set('ETag', etag);
+            res.set('X-Cache', 'MISS');
+            res.set('Cache-Control', `public, max-age=${duration}`);
+
+            originalJson(data);
+        };
+
+        next();
+    };
+};
+
+// Invalidate cache helper
+const invalidateCache = async (pattern = 'cache:*') => {
+    const keys = await redisClient.keys(pattern);
+    if (keys.length > 0) {
+        await redisClient.del(keys);
+    }
+    console.log(`Invalidated ${keys.length} cache entries`);
+};
+
+// GET - with caching
+app.get('/api/products', multiLayerCache(300), (req, res) => {
+    res.json({
+        products,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// POST - invalidate cache
+app.post('/api/products', async (req, res) => {
+    const newProduct = {
+        id: products.length + 1,
+        ...req.body,
+        lastModified: Date.now()
+    };
+    products.push(newProduct);
+
+    await invalidateCache('cache:/api/products*');
+
+    res.status(201).json(newProduct);
+});
+
+// PUT - invalidate cache
+app.put('/api/products/:id', async (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = products.findIndex(p => p.id === id);
+
+    if (index === -1) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+
+    products[index] = { ...products[index], ...req.body, lastModified: Date.now() };
+    await invalidateCache('cache:/api/products*');
+
+    res.json(products[index]);
+});
+
+// DELETE - invalidate cache
+app.delete('/api/products/:id', async (req, res) => {
+    products = products.filter(p => p.id !== parseInt(req.params.id));
+    await invalidateCache('cache:/api/products*');
+    res.status(204).send();
+});
+
+app.listen(3000);
+</code></pre>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz">
+        <h3>✅ Check Your Knowledge</h3>
+
+        <div class="quiz-question">
+            <p><strong>Q1:</strong> What HTTP status code indicates "Not Modified" for conditional requests?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d6q1" value="a"> A) 200</label>
+                <label><input type="radio" name="d6q1" value="b"> B) 304</label>
+                <label><input type="radio" name="d6q1" value="c"> C) 404</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d6q1', 'b', 'd6q1-fb')">Check Answer</button>
+            <div class="feedback" id="d6q1-fb"></div>
+        </div>
+
+        <div class="quiz-question">
+            <p><strong>Q2:</strong> What's the purpose of rate limiting?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d6q2" value="a"> A) Make the API slower</label>
+                <label><input type="radio" name="d6q2" value="b"> B) Prevent abuse and ensure fair usage</label>
+                <label><input type="radio" name="d6q2" value="c"> C) Cache responses</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d6q2', 'b', 'd6q2-fb')">Check Answer</button>
+            <div class="feedback" id="d6q2-fb"></div>
+        </div>
+
+        <div class="quiz-question">
+            <p><strong>Q3:</strong> Which cache header value prevents caching entirely?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d6q3" value="a"> A) Cache-Control: public</label>
+                <label><input type="radio" name="d6q3" value="b"> B) Cache-Control: max-age=3600</label>
+                <label><input type="radio" name="d6q3" value="c"> C) Cache-Control: no-store</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d6q3', 'c', 'd6q3-fb')">Check Answer</button>
+            <div class="feedback" id="d6q3-fb"></div>
+        </div>
+    </div>
+
+    <div class="takeaways">
+        <h3>🎯 Key Takeaways</h3>
+        <ul>
+            <li>Multi-layer caching (Redis + HTTP headers) provides best performance</li>
+            <li>ETags enable efficient conditional requests (304 Not Modified)</li>
+            <li>Rate limiting protects your API from abuse and ensures fair usage</li>
+            <li>Always invalidate cache after data mutations (POST/PUT/DELETE)</li>
+            <li>Use appropriate Cache-Control directives for different content types</li>
+        </ul>
+        <p><strong>Tomorrow:</strong> API Documentation & Testing - OpenAPI/Swagger, automated testing, and deployment.</p>
+    </div>
+
+    <button class="complete-day" onclick="completeDay(6)">✓ Mark Day 6 Complete</button>
+</div>

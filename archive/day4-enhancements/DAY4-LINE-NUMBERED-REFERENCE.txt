@@ -1,0 +1,507 @@
+================================================================================
+DAY 4 CODE BLOCKS - LINE-NUMBERED REFERENCE
+Complete code with line numbers for easy verification
+================================================================================
+
+
+================================================================================
+BLOCK 1A: JWT Authentication System - SIMPLIFIED VERSION (35 lines)
+================================================================================
+ID: code-d4-1-simple
+Class: language-javascript
+Type: authentication
+Description: Essential JWT authentication with registration, login, and protected routes
+────────────────────────────────────────────────────────────────────────────
+
+1   const jwt = require('jsonwebtoken');         // JWT token generation/verification
+2   const bcrypt = require('bcryptjs');           // Password hashing library
+3   const JWT_SECRET = 'your-secret-key';         // Secret for signing tokens
+4   const JWT_EXPIRES = '24h';                    // Token validity period
+5
+6   // Register: Hash password + create JWT
+7   app.post('/api/auth/register', async (req, res) => {
+8       const hashedPassword = await bcrypt.hash(req.body.password, 10);
+9       const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+10      res.status(201).json({ message: 'Registered', token });
+11  });
+12
+13  // Login: Verify credentials + issue JWT
+14  app.post('/api/auth/login', async (req, res) => {
+15      const user = users.find(u => u.email === req.body.email);
+16      if (!user || !(await bcrypt.compare(req.body.password, user.password))) {
+17          return res.status(401).json({ error: 'Invalid credentials' });
+18      }
+19      const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+20      res.json({ message: 'Login successful', token });
+21  });
+22
+23  // Middleware: Verify JWT from Authorization header
+24  const authenticate = (req, res, next) => {
+25      const token = req.headers.authorization?.split(' ')[1];
+26      if (!token) return res.status(401).json({ error: 'No token provided' });
+27      try {
+28          req.user = jwt.verify(token, JWT_SECRET);    // Decode and verify
+29          next();
+30      } catch { res.status(401).json({ error: 'Invalid token' }); }
+31  };
+32
+33  // Protected route - requires valid JWT
+34  app.get('/api/profile', authenticate, (req, res) => {
+35      res.json({ message: 'Protected data', user: req.user });
+36  });
+
+
+================================================================================
+BLOCK 1B: JWT Authentication System - FULL VERSION (115 lines)
+================================================================================
+ID: code-d4-1
+Class: language-javascript
+Type: authentication
+Description: Complete JWT-based authentication with registration, login, middleware, and protected routes
+────────────────────────────────────────────────────────────────────────────
+
+1   const express = require('express');
+2   const jwt = require('jsonwebtoken');          // JWT token library
+3   const bcrypt = require('bcryptjs');           // Password hashing
+4
+5   const app = express();
+6   app.use(express.json());
+7
+8   // JWT configuration
+9   const JWT_SECRET = 'your-secret-key-change-in-production';  // CRITICAL: Use env variable in production
+10  const JWT_EXPIRES = '24h';                                  // Token valid for 24 hours
+11
+12  // Simulated user database (use real DB in production)
+13  let users = [];
+14
+15  // ========================================
+16  // REGISTRATION: Create new user account
+17  // ========================================
+18  app.post('/api/auth/register', async (req, res) => {
+19      try {
+20          const { email, password, role = 'user' } = req.body;
+21
+22          // Check if email already exists
+23          if (users.find(u => u.email === email)) {
+24              return res.status(409).json({ error: 'Email already registered' });
+25          }
+26
+27          // Hash password with bcrypt (10 rounds)
+28          const hashedPassword = await bcrypt.hash(password, 10);
+29
+30          // Create user object
+31          const user = {
+32              id: users.length + 1,
+33              email,
+34              password: hashedPassword,      // Never store plain passwords!
+35              role
+36          };
+37          users.push(user);
+38
+39          // Generate JWT token with user data
+40          const token = jwt.sign(
+41              { id: user.id, email: user.email, role: user.role },  // Payload
+42              JWT_SECRET,                                             // Secret key
+43              { expiresIn: JWT_EXPIRES }                             // Expiration
+44          );
+45
+46          // Return success with token (exclude password)
+47          res.status(201).json({
+48              message: 'User registered successfully',
+49              token,
+50              user: { id: user.id, email: user.email, role: user.role }
+51          });
+52      } catch (error) {
+53          res.status(500).json({ error: 'Registration failed' });
+54      }
+55  });
+56
+57  // ========================================
+58  // LOGIN: Authenticate existing user
+59  // ========================================
+60  app.post('/api/auth/login', async (req, res) => {
+61      try {
+62          const { email, password } = req.body;
+63
+64          // Find user by email
+65          const user = users.find(u => u.email === email);
+66
+67          // Verify user exists and password matches
+68          if (!user || !(await bcrypt.compare(password, user.password))) {
+69              return res.status(401).json({ error: 'Invalid credentials' });
+70          }
+71
+72          // Generate new JWT token
+73          const token = jwt.sign(
+74              { id: user.id, email: user.email, role: user.role },
+75              JWT_SECRET,
+76              { expiresIn: JWT_EXPIRES }
+77          );
+78
+79          // Return token to client
+80          res.json({
+81              message: 'Login successful',
+82              token,
+83              user: { id: user.id, email: user.email, role: user.role }
+84          });
+85      } catch (error) {
+86          res.status(500).json({ error: 'Login failed' });
+87      }
+88  });
+89
+90  // ========================================
+91  // AUTHENTICATION MIDDLEWARE
+92  // Verifies JWT token in Authorization header
+93  // ========================================
+94  const authenticate = (req, res, next) => {
+95      // Extract Authorization header
+96      const authHeader = req.headers.authorization;
+97
+98      // Check for Bearer token format
+99      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+100         return res.status(401).json({ error: 'No token provided' });
+101     }
+102
+103     // Extract token (format: "Bearer <token>")
+104     const token = authHeader.split(' ')[1];
+105
+106     try {
+107         // Verify and decode token
+108         const decoded = jwt.verify(token, JWT_SECRET);
+109         req.user = decoded;  // Attach user data to request
+110         next();              // Proceed to route handler
+111     } catch (error) {
+112         res.status(401).json({ error: 'Invalid or expired token' });
+113     }
+114 };
+115
+116 // ========================================
+117 // PROTECTED ROUTE EXAMPLE
+118 // Requires valid JWT token
+119 // ========================================
+120 app.get('/api/profile', authenticate, (req, res) => {
+121     res.json({
+122         message: 'Protected data',
+123         user: req.user  // User data from verified token
+124     });
+125 });
+126
+127 app.listen(3000, () => console.log('Auth server running on port 3000'));
+
+
+================================================================================
+BLOCK 2: Role-Based Access Control - RBAC (71 lines)
+================================================================================
+ID: code-d4-2
+Class: language-javascript
+Type: authorization
+Description: Role-based authorization middleware with examples for admin-only, multi-role, and resource ownership access control
+────────────────────────────────────────────────────────────────────────────
+
+1   // ========================================
+2   // ROLE-BASED AUTHORIZATION MIDDLEWARE
+3   // Restricts access based on user roles
+4   // ========================================
+5   const authorize = (...allowedRoles) => {
+6       return (req, res, next) => {
+7           // Ensure user is authenticated
+8           if (!req.user) {
+9               return res.status(401).json({ error: 'Authentication required' });
+10          }
+11
+12          // Check if user's role is allowed
+13          if (!allowedRoles.includes(req.user.role)) {
+14              return res.status(403).json({
+15                  error: 'Forbidden',
+16                  message: `Role '${req.user.role}' cannot access this resource`
+17              });
+18          }
+19
+20          next();  // User has required role
+21      };
+22  };
+23
+24  // ========================================
+25  // USAGE EXAMPLES
+26  // ========================================
+27
+28  // Example 1: Any authenticated user can access
+29  app.get('/api/dashboard', authenticate, (req, res) => {
+30      res.json({ message: 'Dashboard data' });
+31  });
+32
+33  // Example 2: Admin-only endpoint
+34  app.get('/api/admin/users', authenticate, authorize('admin'), (req, res) => {
+35      // Only users with role='admin' can access
+36      res.json({ users: users.map(u => ({ id: u.id, email: u.email, role: u.role })) });
+37  });
+38
+39  // Example 3: Multiple roles allowed (admin OR manager)
+40  app.get('/api/reports', authenticate, authorize('admin', 'manager'), (req, res) => {
+41      res.json({ message: 'Reports data' });
+42  });
+43
+44  // ========================================
+45  // RESOURCE OWNERSHIP MIDDLEWARE
+46  // Ensures users can only access their own resources
+47  // ========================================
+48  const authorizeOwner = (req, res, next) => {
+49      const resourceUserId = parseInt(req.params.userId);
+50
+51      // Admins can access any resource
+52      if (req.user.role === 'admin') {
+53          return next();
+54      }
+55
+56      // Regular users can only access their own resources
+57      if (req.user.id !== resourceUserId) {
+58          return res.status(403).json({ error: 'You can only access your own resources' });
+59      }
+60
+61      next();
+62  };
+63
+64  // Example: Users can only update their own profile
+65  // Admins can update any profile
+66  app.put('/api/users/:userId', authenticate, authorizeOwner, (req, res) => {
+67      res.json({ message: 'Profile updated' });
+68  });
+
+
+================================================================================
+BLOCK 3: Token Manager - localStorage (91 lines)
+================================================================================
+ID: storage-d4
+Class: language-javascript
+Type: client-auth
+Description: Client-side JWT token management with localStorage including save, retrieve, expiration check, and authenticated fetch
+────────────────────────────────────────────────────────────────────────────
+
+1   // ========================================
+2   // TOKEN MANAGER - Client-side JWT handling
+3   // ========================================
+4   const TOKEN_KEY = 'day4_auth_token';      // localStorage key for JWT
+5   const USER_KEY = 'day4_user_data';        // localStorage key for user info
+6
+7   // Save authentication data after successful login
+8   function saveAuth(token, user) {
+9       localStorage.setItem(TOKEN_KEY, token);
+10      localStorage.setItem(USER_KEY, JSON.stringify(user));
+11      console.log('✅ Auth saved for:', user.email);
+12  }
+13
+14  // Retrieve stored JWT token
+15  function getToken() {
+16      return localStorage.getItem(TOKEN_KEY);
+17  }
+18
+19  // Get current user information
+20  function getCurrentUser() {
+21      const userData = localStorage.getItem(USER_KEY);
+22      return userData ? JSON.parse(userData) : null;
+23  }
+24
+25  // ========================================
+26  // JWT EXPIRATION CHECK
+27  // Decode JWT and check expiration without verification
+28  // ========================================
+29  function isTokenExpired() {
+30      const token = getToken();
+31      if (!token) return true;
+32
+33      try {
+34          // JWT structure: header.payload.signature
+35          // Decode payload (middle part)
+36          const payload = JSON.parse(atob(token.split('.')[1]));
+37
+38          // Check if exp (expiration) timestamp has passed
+39          return payload.exp * 1000 < Date.now();  // exp is in seconds, Date.now() is ms
+40      } catch {
+41          return true;  // Invalid token format
+42      }
+43  }
+44
+45  // ========================================
+46  // AUTHENTICATED FETCH HELPER
+47  // Automatically adds Authorization header to requests
+48  // ========================================
+49  async function authFetch(url, options = {}) {
+50      const token = getToken();
+51
+52      // Validate token exists and isn't expired
+53      if (!token || isTokenExpired()) {
+54          throw new Error('Authentication required');
+55      }
+56
+57      // Make fetch with Authorization header
+58      return fetch(url, {
+59          ...options,
+60          headers: {
+61              ...options.headers,
+62              'Authorization': `Bearer ${token}`,       // Add JWT token
+63              'Content-Type': 'application/json'
+64          }
+65      });
+66  }
+67
+68  // Clear all authentication data
+69  function logout() {
+70      localStorage.removeItem(TOKEN_KEY);
+71      localStorage.removeItem(USER_KEY);
+72      console.log('👋 Logged out');
+73  }
+74
+75  // ========================================
+76  // USAGE EXAMPLES
+77  // ========================================
+78
+79  // Example 1: Save auth after login
+80  saveAuth('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', {
+81      id: 1,
+82      email: 'test@example.com',
+83      role: 'user'
+84  });
+85
+86  // Example 2: Check current user
+87  console.log('Current user:', getCurrentUser());
+88
+89  // Example 3: Check token expiration
+90  console.log('Token expired?', isTokenExpired());
+91
+92  // Example 4: Make authenticated API request
+93  authFetch('/api/profile')
+94      .then(res => res.json())
+95      .then(data => console.log('Profile:', data))
+96      .catch(err => console.error('Auth error:', err));
+
+
+================================================================================
+BLOCK 4: Protected Todo API Solution (100 lines)
+================================================================================
+ID: solution-d4
+Class: language-javascript
+Type: exercise-solution
+Description: Complete protected Todo API with user-scoped access - users can only view and create their own todos
+────────────────────────────────────────────────────────────────────────────
+
+1   const express = require('express');
+2   const jwt = require('jsonwebtoken');
+3   const app = express();
+4   app.use(express.json());
+5
+6   const SECRET = 'todo-secret';       // JWT secret key
+7   let users = [];                      // User database (in-memory)
+8   let todos = [];                      // Todo database (in-memory)
+9
+10  // ========================================
+11  // AUTHENTICATION MIDDLEWARE
+12  // ========================================
+13  const auth = (req, res, next) => {
+14      // Extract token from "Bearer <token>" format
+15      const token = req.headers.authorization?.split(' ')[1];
+16
+17      if (!token) {
+18          return res.status(401).json({ error: 'No token' });
+19      }
+20
+21      try {
+22          // Verify token and attach user data to request
+23          req.user = jwt.verify(token, SECRET);
+24          next();
+25      } catch {
+26          res.status(401).json({ error: 'Invalid token' });
+27      }
+28  };
+29
+30  // ========================================
+31  // USER REGISTRATION
+32  // ========================================
+33  app.post('/api/auth/register', (req, res) => {
+34      const { email, password } = req.body;
+35
+36      // Check for duplicate email
+37      if (users.find(u => u.email === email)) {
+38          return res.status(409).json({ error: 'Email exists' });
+39      }
+40
+41      // Create new user (NOTE: password should be hashed in production!)
+42      const user = { id: users.length + 1, email, password };
+43      users.push(user);
+44
+45      // Generate JWT token
+46      const token = jwt.sign({ id: user.id, email }, SECRET, { expiresIn: '1h' });
+47
+48      res.status(201).json({ token });
+49  });
+50
+51  // ========================================
+52  // USER LOGIN
+53  // ========================================
+54  app.post('/api/auth/login', (req, res) => {
+55      const { email, password } = req.body;
+56
+57      // Find user and verify credentials
+58      const user = users.find(u => u.email === email && u.password === password);
+59
+60      if (!user) {
+61          return res.status(401).json({ error: 'Invalid credentials' });
+62      }
+63
+64      // Generate JWT token
+65      const token = jwt.sign({ id: user.id, email }, SECRET, { expiresIn: '1h' });
+66
+67      res.json({ token });
+68  });
+69
+70  // ========================================
+71  // GET USER'S TODOS (Protected)
+72  // Returns only todos belonging to authenticated user
+73  // ========================================
+74  app.get('/api/todos', auth, (req, res) => {
+75      // Filter todos by user ID
+76      const userTodos = todos.filter(t => t.userId === req.user.id);
+77      res.json(userTodos);
+78  });
+79
+80  // ========================================
+81  // CREATE TODO (Protected)
+82  // Todo automatically assigned to authenticated user
+83  // ========================================
+84  app.post('/api/todos', auth, (req, res) => {
+85      const todo = {
+86          id: todos.length + 1,
+87          userId: req.user.id,              // Associate with logged-in user
+88          title: req.body.title,
+89          completed: false
+90      };
+91
+92      todos.push(todo);
+93      res.status(201).json(todo);
+94  });
+95
+96  app.listen(3000, () => console.log('Protected Todo API running on port 3000'));
+
+
+================================================================================
+SUMMARY STATISTICS
+================================================================================
+
+BLOCK 1A (Simplified):  35 lines
+BLOCK 1B (Full):        127 lines
+BLOCK 2 (RBAC):         68 lines
+BLOCK 3 (Token Mgr):    96 lines
+BLOCK 4 (Todo API):     96 lines
+
+Total Enhanced Lines:   422 lines
+Original Lines:         ~275 lines
+Line Increase:          +147 lines (+53% for better learning)
+
+Attributes Added:
+- class="language-javascript" on all blocks
+- data-type on all blocks (authentication, authorization, client-auth, exercise-solution)
+- data-description on all blocks with detailed descriptions
+- Section separators (========)
+- Inline comments at key decision points
+- Educational comments explaining concepts
+
+================================================================================

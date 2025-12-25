@@ -1,0 +1,527 @@
+<div id="day5" class="day-content">
+    <h2>📘 Day 5: API Versioning & Evolution</h2>
+
+    <div class="objectives">
+        <h3>🎯 Learning Objectives</h3>
+        <ul>
+            <li>Understand different API versioning strategies</li>
+            <li>Implement URI, header, and content negotiation versioning</li>
+            <li>Handle breaking vs non-breaking changes</li>
+            <li>Create deprecation strategies for old API versions</li>
+            <li>Design backward-compatible APIs</li>
+        </ul>
+    </div>
+
+    <h3>📚 Core Concepts</h3>
+
+    <div class="concept-grid">
+        <div class="concept-card">
+            <h4>📍 URI Versioning</h4>
+            <p>Version in the URL path (/api/v1/users, /api/v2/users). Most visible and explicit. Easy for developers to understand.</p>
+        </div>
+        <div class="concept-card">
+            <h4>📋 Header Versioning</h4>
+            <p>Version specified in Accept header (Accept: application/vnd.api+json; version=2). Cleaner URLs but less discoverable.</p>
+        </div>
+        <div class="concept-card">
+            <h4>🔄 Breaking Changes</h4>
+            <p>Changes that break existing clients: removing fields, changing types, renaming endpoints. Require new major version.</p>
+        </div>
+        <div class="concept-card">
+            <h4>⚠️ Deprecation</h4>
+            <p>Gradual phase-out of old versions. Use Sunset header, provide migration guides, maintain overlap period.</p>
+        </div>
+    </div>
+
+    <h3>💻 Code Examples</h3>
+
+    <h4>1. URI Versioning Implementation</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - URI Versioning</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d5-1')">Copy</button>
+        </div>
+        <pre><code id="code-d5-1">const express = require('express');
+const app = express();
+app.use(express.json());
+
+// Sample data
+let users = [
+    { id: 1, name: 'Alice', email: 'alice@example.com' }
+];
+
+// V1 API - Original version
+app.get('/api/v1/users', (req, res) => {
+    // V1 returns simple format
+    res.json(users);
+});
+
+app.get('/api/v1/users/:id', (req, res) => {
+    const user = users.find(u => u.id === parseInt(req.params.id));
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+});
+
+// V2 API - Enhanced with metadata and HATEOAS
+app.get('/api/v2/users', (req, res) => {
+    // V2 returns enhanced format with metadata
+    res.json({
+        version: '2.0',
+        data: users,
+        metadata: {
+            total: users.length,
+            page: 1,
+            perPage: 10
+        },
+        _links: {
+            self: '/api/v2/users',
+            docs: '/api/v2/docs'
+        }
+    });
+});
+
+app.get('/api/v2/users/:id', (req, res) => {
+    const user = users.find(u => u.id === parseInt(req.params.id));
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // V2 includes hypermedia links
+    res.json({
+        version: '2.0',
+        data: user,
+        _links: {
+            self: `/api/v2/users/${user.id}`,
+            update: `/api/v2/users/${user.id}`,
+            delete: `/api/v2/users/${user.id}`
+        }
+    });
+});
+
+// Version middleware to handle unversioned requests
+app.use('/api/users*', (req, res, next) => {
+    res.status(400).json({
+        error: 'API version required',
+        message: 'Please specify version in URL (e.g., /api/v2/users)',
+        supportedVersions: ['v1', 'v2']
+    });
+});
+
+app.listen(3000, () => console.log('Versioned API running'));
+</code></pre>
+    </div>
+
+    <h4>2. Header-Based Versioning</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Header Versioning</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d5-2')">Copy</button>
+        </div>
+        <pre><code id="code-d5-2">const express = require('express');
+const app = express();
+app.use(express.json());
+
+// Middleware to extract API version from header
+const apiVersion = (req, res, next) => {
+    // Check Accept-Version header
+    const version = req.headers['accept-version'] ||
+                   req.headers['api-version'] ||
+                   '1.0';
+
+    req.apiVersion = parseFloat(version);
+
+    // Set response header indicating version used
+    res.set('API-Version', version);
+
+    next();
+};
+
+app.use(apiVersion);
+
+// Single endpoint that adapts based on version
+app.get('/api/users', (req, res) => {
+    const users = [
+        { id: 1, firstName: 'Alice', lastName: 'Johnson', email: 'alice@example.com' }
+    ];
+
+    if (req.apiVersion < 2.0) {
+        // V1 format: combined name
+        const v1Users = users.map(u => ({
+            id: u.id,
+            name: `${u.firstName} ${u.lastName}`,
+            email: u.email
+        }));
+        return res.json(v1Users);
+    } else {
+        // V2 format: separate firstName/lastName
+        return res.json({
+            version: req.apiVersion,
+            data: users,
+            _links: { self: '/api/users' }
+        });
+    }
+});
+
+// Deprecation middleware for old versions
+const checkDeprecation = (req, res, next) => {
+    if (req.apiVersion < 1.5) {
+        res.set('Warning', '299 - "API version deprecated. Please upgrade to v2.0"');
+        res.set('Sunset', 'Sat, 31 Dec 2024 23:59:59 GMT');
+        res.set('Link', '</api/docs/migration>; rel="deprecation"');
+    }
+    next();
+};
+
+app.use(checkDeprecation);
+
+app.listen(3000, () => console.log('Header-versioned API running'));
+
+// Example usage:
+// curl -H "Accept-Version: 1.0" http://localhost:3000/api/users
+// curl -H "Accept-Version: 2.0" http://localhost:3000/api/users
+</code></pre>
+    </div>
+
+    <h4>3. Content Negotiation Versioning</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Content Negotiation</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d5-3')">Copy</button>
+        </div>
+        <pre><code id="code-d5-3">const express = require('express');
+const app = express();
+app.use(express.json());
+
+// Parse custom media types
+const parseAcceptHeader = (acceptHeader) => {
+    // Example: application/vnd.myapi.v2+json
+    const match = acceptHeader.match(/application\/vnd\.myapi\.v(\d+)\+json/);
+    return match ? parseInt(match[1]) : 1;
+};
+
+app.get('/api/users', (req, res) => {
+    const acceptHeader = req.headers.accept || 'application/json';
+    const version = parseAcceptHeader(acceptHeader);
+
+    const users = [
+        { id: 1, name: 'Alice', email: 'alice@example.com', createdAt: '2024-01-01' }
+    ];
+
+    switch(version) {
+        case 1:
+            // V1: Basic format
+            res.set('Content-Type', 'application/vnd.myapi.v1+json');
+            return res.json(users.map(({ id, name, email }) => ({ id, name, email })));
+
+        case 2:
+            // V2: Enhanced format with timestamps
+            res.set('Content-Type', 'application/vnd.myapi.v2+json');
+            return res.json({
+                version: 2,
+                data: users,
+                metadata: { count: users.length }
+            });
+
+        default:
+            return res.status(406).json({
+                error: 'Not Acceptable',
+                message: `API version ${version} not supported`,
+                supportedVersions: [
+                    'application/vnd.myapi.v1+json',
+                    'application/vnd.myapi.v2+json'
+                ]
+            });
+    }
+});
+
+app.listen(3000, () => console.log('Content negotiation API running'));
+
+// Example usage:
+// curl -H "Accept: application/vnd.myapi.v1+json" http://localhost:3000/api/users
+// curl -H "Accept: application/vnd.myapi.v2+json" http://localhost:3000/api/users
+</code></pre>
+    </div>
+
+    <div class="storage-demo">
+        <h4>💾 localStorage Practical: API Version Manager</h4>
+        <p>Track and manage API version compatibility on the client side:</p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Version Manager</span>
+                <button class="copy-btn" onclick="copyCode(this, 'storage-d5')">Copy</button>
+            </div>
+            <pre><code id="storage-d5">// API Version Manager - Handle version compatibility
+const VERSION_KEY = 'day5_api_version';
+const VERSION_HISTORY_KEY = 'day5_version_history';
+
+class APIVersionManager {
+    constructor() {
+        this.currentVersion = this.loadVersion() || '2.0';
+        this.minSupportedVersion = '1.0';
+        this.maxSupportedVersion = '2.0';
+    }
+
+    // Load saved version preference
+    loadVersion() {
+        return localStorage.getItem(VERSION_KEY);
+    }
+
+    // Set preferred API version
+    setVersion(version) {
+        if (!this.isVersionSupported(version)) {
+            throw new Error(`Version ${version} not supported`);
+        }
+        this.currentVersion = version;
+        localStorage.setItem(VERSION_KEY, version);
+        this.logVersionChange(version);
+        console.log(`✅ API version set to ${version}`);
+    }
+
+    // Check if version is supported
+    isVersionSupported(version) {
+        const v = parseFloat(version);
+        return v >= parseFloat(this.minSupportedVersion) &&
+               v <= parseFloat(this.maxSupportedVersion);
+    }
+
+    // Get headers for API requests
+    getHeaders() {
+        return {
+            'Accept-Version': this.currentVersion,
+            'Accept': `application/vnd.myapi.v${this.currentVersion.split('.')[0]}+json`
+        };
+    }
+
+    // Log version changes for debugging
+    logVersionChange(version) {
+        const history = JSON.parse(localStorage.getItem(VERSION_HISTORY_KEY)) || [];
+        history.push({
+            version,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent
+        });
+        if (history.length > 50) history.shift(); // Keep last 50
+        localStorage.setItem(VERSION_HISTORY_KEY, JSON.stringify(history));
+    }
+
+    // Get version history
+    getHistory() {
+        return JSON.parse(localStorage.getItem(VERSION_HISTORY_KEY)) || [];
+    }
+
+    // Handle deprecation warnings
+    handleDeprecation(response) {
+        const warning = response.headers.get('Warning');
+        const sunset = response.headers.get('Sunset');
+
+        if (warning || sunset) {
+            console.warn('⚠️ API Version Deprecation:');
+            if (warning) console.warn(`Warning: ${warning}`);
+            if (sunset) console.warn(`Sunset Date: ${sunset}`);
+
+            // Show user notification
+            this.notifyDeprecation(sunset);
+        }
+    }
+
+    notifyDeprecation(sunsetDate) {
+        const message = `This API version will be deprecated on ${sunsetDate}. Please upgrade.`;
+        localStorage.setItem('api_deprecation_notice', message);
+    }
+}
+
+// Usage
+const apiVersion = new APIVersionManager();
+console.log('Current version:', apiVersion.currentVersion);
+
+// Make versioned request
+async function fetchUsers() {
+    const response = await fetch('/api/users', {
+        headers: apiVersion.getHeaders()
+    });
+
+    // Check for deprecation
+    apiVersion.handleDeprecation(response);
+
+    return response.json();
+}
+
+// Change version
+apiVersion.setVersion('2.0');
+console.log('Version history:', apiVersion.getHistory());
+</code></pre>
+        </div>
+    </div>
+
+    <div class="exercise">
+        <h4>🏋️ Exercise: Implement Breaking Changes Strategy</h4>
+        <p><strong>Scenario:</strong> You need to rename "email" to "emailAddress" and add a required "phoneNumber" field.</p>
+        <p><strong>Task:</strong> Implement both V1 and V2 endpoints that handle this breaking change gracefully.</p>
+        <p><strong>Requirements:</strong></p>
+        <ul>
+            <li>V1: Keep existing "email" field, phoneNumber optional</li>
+            <li>V2: Use "emailAddress" and require "phoneNumber"</li>
+            <li>Add deprecation headers to V1</li>
+            <li>Provide migration guide in V1 responses</li>
+        </ul>
+
+        <details>
+            <summary>💡 Hint</summary>
+            <p>Use separate route handlers for each version, and add transformation logic to map between old and new field names. Include migration info in V1 responses.</p>
+        </details>
+
+        <details>
+            <summary>✅ Solution</summary>
+            <div class="code-block">
+                <div class="code-header">
+                    <span>JavaScript - Breaking Changes Solution</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'solution-d5')">Copy</button>
+                </div>
+                <pre><code id="solution-d5">const express = require('express');
+const app = express();
+app.use(express.json());
+
+// Internal data model (V2 structure)
+let users = [
+    { id: 1, name: 'Alice', emailAddress: 'alice@example.com', phoneNumber: '+1234567890' }
+];
+
+// V1 API - Deprecated
+app.get('/api/v1/users', (req, res) => {
+    // Add deprecation headers
+    res.set('Warning', '299 - "API v1 deprecated. Migrate to v2 by 2024-12-31"');
+    res.set('Sunset', 'Tue, 31 Dec 2024 23:59:59 GMT');
+    res.set('Link', '</api/v2/migration>; rel="deprecation"');
+
+    // Transform to V1 format
+    const v1Users = users.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.emailAddress, // Map emailAddress back to email
+        phoneNumber: u.phoneNumber || null // Optional in V1
+    }));
+
+    res.json({
+        data: v1Users,
+        _migration: {
+            message: 'Please upgrade to v2',
+            changes: [
+                'Field "email" renamed to "emailAddress"',
+                'Field "phoneNumber" is now required'
+            ],
+            migrationGuide: '/api/v2/migration'
+        }
+    });
+});
+
+app.post('/api/v1/users', (req, res) => {
+    const { name, email, phoneNumber } = req.body;
+
+    // Transform V1 request to V2 format
+    const newUser = {
+        id: users.length + 1,
+        name,
+        emailAddress: email, // Map email to emailAddress
+        phoneNumber: phoneNumber || 'Not provided' // Handle optional
+    };
+
+    users.push(newUser);
+
+    // Return in V1 format
+    res.status(201).json({
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.emailAddress,
+        phoneNumber: newUser.phoneNumber
+    });
+});
+
+// V2 API - Current
+app.get('/api/v2/users', (req, res) => {
+    res.json({
+        version: '2.0',
+        data: users
+    });
+});
+
+app.post('/api/v2/users', (req, res) => {
+    const { name, emailAddress, phoneNumber } = req.body;
+
+    // Validate required fields for V2
+    if (!name || !emailAddress || !phoneNumber) {
+        return res.status(400).json({
+            error: 'Validation failed',
+            details: [
+                !name && { field: 'name', message: 'Required' },
+                !emailAddress && { field: 'emailAddress', message: 'Required' },
+                !phoneNumber && { field: 'phoneNumber', message: 'Required in v2' }
+            ].filter(Boolean)
+        });
+    }
+
+    const newUser = {
+        id: users.length + 1,
+        name,
+        emailAddress,
+        phoneNumber
+    };
+
+    users.push(newUser);
+    res.status(201).json({ version: '2.0', data: newUser });
+});
+
+app.listen(3000);
+</code></pre>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz">
+        <h3>✅ Check Your Knowledge</h3>
+
+        <div class="quiz-question">
+            <p><strong>Q1:</strong> Which versioning strategy is most visible and explicit for developers?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d5q1" value="a"> A) URI versioning (/api/v2/users)</label>
+                <label><input type="radio" name="d5q1" value="b"> B) Header versioning</label>
+                <label><input type="radio" name="d5q1" value="c"> C) Query parameter versioning</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d5q1', 'a', 'd5q1-fb')">Check Answer</button>
+            <div class="feedback" id="d5q1-fb"></div>
+        </div>
+
+        <div class="quiz-question">
+            <p><strong>Q2:</strong> Which HTTP header indicates when an API version will be sunset?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d5q2" value="a"> A) Deprecation</label>
+                <label><input type="radio" name="d5q2" value="b"> B) Sunset</label>
+                <label><input type="radio" name="d5q2" value="c"> C) Expires</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d5q2', 'b', 'd5q2-fb')">Check Answer</button>
+            <div class="feedback" id="d5q2-fb"></div>
+        </div>
+
+        <div class="quiz-question">
+            <p><strong>Q3:</strong> What type of change is considered "breaking"?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d5q3" value="a"> A) Adding a new optional field</label>
+                <label><input type="radio" name="d5q3" value="b"> B) Removing an existing field</label>
+                <label><input type="radio" name="d5q3" value="c"> C) Adding a new endpoint</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d5q3', 'b', 'd5q3-fb')">Check Answer</button>
+            <div class="feedback" id="d5q3-fb"></div>
+        </div>
+    </div>
+
+    <div class="takeaways">
+        <h3>🎯 Key Takeaways</h3>
+        <ul>
+            <li>URI versioning is most explicit; header versioning keeps URLs clean</li>
+            <li>Breaking changes (removing fields, changing types) require new major versions</li>
+            <li>Use Sunset and Warning headers to communicate deprecation</li>
+            <li>Maintain overlap period when deprecating old versions</li>
+            <li>Document migration paths clearly for clients</li>
+        </ul>
+        <p><strong>Tomorrow:</strong> Performance & Optimization - caching, rate limiting, and database optimization.</p>
+    </div>
+
+    <button class="complete-day" onclick="completeDay(5)">✓ Mark Day 5 Complete</button>
+</div>

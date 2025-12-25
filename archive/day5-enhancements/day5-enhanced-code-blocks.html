@@ -1,0 +1,1002 @@
+<!-- ============================================ -->
+<!-- DAY 5 ENHANCED CODE BLOCKS -->
+<!-- RESTful API Design - API Versioning & Evolution -->
+<!-- ============================================ -->
+
+<!-- ============================================ -->
+<!-- SECTION 1: VERSIONING STRATEGIES (TABBED INTERFACE) -->
+<!-- ============================================ -->
+
+<h4>Versioning Strategies Comparison</h4>
+<p class="code-description">Explore three different approaches to API versioning. Each strategy has trade-offs in terms of discoverability, URL cleanliness, and ease of implementation.</p>
+
+<!-- Tabbed Interface for Versioning Strategies -->
+<div class="code-tabs">
+    <div class="tab-buttons">
+        <button class="tab-btn active" onclick="switchTab(event, 'uri-version-tab')">
+            <span class="tab-icon">🔗</span> URI Versioning
+        </button>
+        <button class="tab-btn" onclick="switchTab(event, 'header-version-tab')">
+            <span class="tab-icon">📋</span> Header Versioning
+        </button>
+        <button class="tab-btn" onclick="switchTab(event, 'content-neg-tab')">
+            <span class="tab-icon">🎯</span> Content Negotiation
+        </button>
+    </div>
+
+    <!-- Tab 1: URI Versioning -->
+    <div id="uri-version-tab" class="tab-content active">
+        <div class="code-block">
+            <div class="code-header">
+                <span class="language-badge javascript">JavaScript (Express.js)</span>
+                <span class="code-meta">URI Versioning Implementation</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d5-uri-version')">Copy</button>
+            </div>
+            <p class="code-description">
+                <strong>Strategy:</strong> Version number in URL path (<code>/api/v1/users</code>, <code>/api/v2/users</code>)<br>
+                <strong>Pros:</strong> Most visible and explicit, easy caching, simple testing<br>
+                <strong>Cons:</strong> URL pollution, requires separate routes for each version
+            </p>
+            <div class="code-content">
+                <pre class="line-numbers"><code class="language-javascript" id="code-d5-uri-version" data-type="api-versioning"><span class="line-number">1</span><span class="keyword">const</span> express = <span class="function">require</span>(<span class="string">'express'</span>);
+<span class="line-number">2</span><span class="keyword">const</span> app = <span class="function">express</span>();
+<span class="line-number">3</span>app.<span class="function">use</span>(express.<span class="function">json</span>());
+<span class="line-number">4</span>
+<span class="line-number">5</span><span class="comment">// Sample data store</span>
+<span class="line-number">6</span><span class="keyword">let</span> users = [
+<span class="line-number">7</span>    { <span class="property">id</span>: <span class="number">1</span>, <span class="property">name</span>: <span class="string">'Alice'</span>, <span class="property">email</span>: <span class="string">'alice@example.com'</span> }
+<span class="line-number">8</span>];
+<span class="line-number">9</span>
+<span class="line-number">10</span><span class="comment">// ==========================================</span>
+<span class="line-number">11</span><span class="comment">// V1 API - Original version (Simple format)</span>
+<span class="line-number">12</span><span class="comment">// ==========================================</span>
+<span class="line-number">13</span>
+<span class="line-number">14</span><span class="comment">// GET /api/v1/users - List all users</span>
+<span class="line-number">15</span>app.<span class="function">get</span>(<span class="string">'/api/v1/users'</span>, (req, res) =&gt; {
+<span class="line-number">16</span>    <span class="comment">// V1 returns simple array format</span>
+<span class="line-number">17</span>    res.<span class="function">json</span>(users);  <span class="comment">// Type: User[]</span>
+<span class="line-number">18</span>});
+<span class="line-number">19</span>
+<span class="line-number">20</span><span class="comment">// GET /api/v1/users/:id - Get single user</span>
+<span class="line-number">21</span>app.<span class="function">get</span>(<span class="string">'/api/v1/users/:id'</span>, (req, res) =&gt; {
+<span class="line-number">22</span>    <span class="keyword">const</span> user = users.<span class="function">find</span>(u =&gt; u.id === <span class="function">parseInt</span>(req.params.id));
+<span class="line-number">23</span>    <span class="keyword">if</span> (!user) <span class="keyword">return</span> res.<span class="function">status</span>(<span class="number">404</span>).<span class="function">json</span>({ <span class="property">error</span>: <span class="string">'User not found'</span> });
+<span class="line-number">24</span>    res.<span class="function">json</span>(user);  <span class="comment">// Type: User</span>
+<span class="line-number">25</span>});
+<span class="line-number">26</span>
+<span class="line-number">27</span><span class="comment">// ==========================================</span>
+<span class="line-number">28</span><span class="comment">// V2 API - Enhanced with metadata and HATEOAS</span>
+<span class="line-number">29</span><span class="comment">// ==========================================</span>
+<span class="line-number">30</span>
+<span class="line-number">31</span><span class="comment">// GET /api/v2/users - List users with pagination metadata</span>
+<span class="line-number">32</span>app.<span class="function">get</span>(<span class="string">'/api/v2/users'</span>, (req, res) =&gt; {
+<span class="line-number">33</span>    <span class="comment">// V2 returns enhanced format with metadata and hypermedia</span>
+<span class="line-number">34</span>    res.<span class="function">json</span>({
+<span class="line-number">35</span>        <span class="property">version</span>: <span class="string">'2.0'</span>,                    <span class="comment">// Type: string</span>
+<span class="line-number">36</span>        <span class="property">data</span>: users,                         <span class="comment">// Type: User[]</span>
+<span class="line-number">37</span>        <span class="property">metadata</span>: {
+<span class="line-number">38</span>            <span class="property">total</span>: users.length,            <span class="comment">// Type: number</span>
+<span class="line-number">39</span>            <span class="property">page</span>: <span class="number">1</span>,                         <span class="comment">// Type: number</span>
+<span class="line-number">40</span>            <span class="property">perPage</span>: <span class="number">10</span>                      <span class="comment">// Type: number</span>
+<span class="line-number">41</span>        },
+<span class="line-number">42</span>        <span class="property">_links</span>: {                          <span class="comment">// HATEOAS links</span>
+<span class="line-number">43</span>            <span class="property">self</span>: <span class="string">'/api/v2/users'</span>,
+<span class="line-number">44</span>            <span class="property">docs</span>: <span class="string">'/api/v2/docs'</span>
+<span class="line-number">45</span>        }
+<span class="line-number">46</span>    });
+<span class="line-number">47</span>});
+<span class="line-number">48</span>
+<span class="line-number">49</span><span class="comment">// GET /api/v2/users/:id - Get single user with hypermedia</span>
+<span class="line-number">50</span>app.<span class="function">get</span>(<span class="string">'/api/v2/users/:id'</span>, (req, res) =&gt; {
+<span class="line-number">51</span>    <span class="keyword">const</span> user = users.<span class="function">find</span>(u =&gt; u.id === <span class="function">parseInt</span>(req.params.id));
+<span class="line-number">52</span>    <span class="keyword">if</span> (!user) <span class="keyword">return</span> res.<span class="function">status</span>(<span class="number">404</span>).<span class="function">json</span>({ <span class="property">error</span>: <span class="string">'User not found'</span> });
+<span class="line-number">53</span>
+<span class="line-number">54</span>    <span class="comment">// V2 includes hypermedia links for discoverability</span>
+<span class="line-number">55</span>    res.<span class="function">json</span>({
+<span class="line-number">56</span>        <span class="property">version</span>: <span class="string">'2.0'</span>,
+<span class="line-number">57</span>        <span class="property">data</span>: user,
+<span class="line-number">58</span>        <span class="property">_links</span>: {
+<span class="line-number">59</span>            <span class="property">self</span>: <span class="template-string">`/api/v2/users/${user.id}`</span>,
+<span class="line-number">60</span>            <span class="property">update</span>: <span class="template-string">`/api/v2/users/${user.id}`</span>,
+<span class="line-number">61</span>            <span class="property">delete</span>: <span class="template-string">`/api/v2/users/${user.id}`</span>
+<span class="line-number">62</span>        }
+<span class="line-number">63</span>    });
+<span class="line-number">64</span>});
+<span class="line-number">65</span>
+<span class="line-number">66</span><span class="comment">// ==========================================</span>
+<span class="line-number">67</span><span class="comment">// Version Enforcement Middleware</span>
+<span class="line-number">68</span><span class="comment">// ==========================================</span>
+<span class="line-number">69</span>
+<span class="line-number">70</span><span class="comment">// Catch unversioned requests and require explicit version</span>
+<span class="line-number">71</span>app.<span class="function">use</span>(<span class="string">'/api/users*'</span>, (req, res, next) =&gt; {
+<span class="line-number">72</span>    res.<span class="function">status</span>(<span class="number">400</span>).<span class="function">json</span>({
+<span class="line-number">73</span>        <span class="property">error</span>: <span class="string">'API version required'</span>,
+<span class="line-number">74</span>        <span class="property">message</span>: <span class="string">'Please specify version in URL (e.g., /api/v2/users)'</span>,
+<span class="line-number">75</span>        <span class="property">supportedVersions</span>: [<span class="string">'v1'</span>, <span class="string">'v2'</span>]
+<span class="line-number">76</span>    });
+<span class="line-number">77</span>});
+<span class="line-number">78</span>
+<span class="line-number">79</span>app.<span class="function">listen</span>(<span class="number">3000</span>, () =&gt; <span class="builtin">console</span>.<span class="function">log</span>(<span class="string">'Versioned API running on port 3000'</span>));
+</code></pre>
+            </div>
+            <div class="code-footer">
+                <span class="code-note">💡 <strong>Best for:</strong> Public APIs where version visibility is important</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 2: Header Versioning -->
+    <div id="header-version-tab" class="tab-content">
+        <div class="code-block">
+            <div class="code-header">
+                <span class="language-badge javascript">JavaScript (Express.js)</span>
+                <span class="code-meta">Header-Based Versioning</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d5-header-version')">Copy</button>
+            </div>
+            <p class="code-description">
+                <strong>Strategy:</strong> Version in custom header (<code>Accept-Version: 2.0</code> or <code>API-Version: 2.0</code>)<br>
+                <strong>Pros:</strong> Clean URLs, version hidden from URL pollution, easier to change<br>
+                <strong>Cons:</strong> Less discoverable, harder to test in browser, requires custom headers
+            </p>
+            <div class="code-content">
+                <pre class="line-numbers"><code class="language-javascript" id="code-d5-header-version" data-type="api-versioning"><span class="line-number">1</span><span class="keyword">const</span> express = <span class="function">require</span>(<span class="string">'express'</span>);
+<span class="line-number">2</span><span class="keyword">const</span> app = <span class="function">express</span>();
+<span class="line-number">3</span>app.<span class="function">use</span>(express.<span class="function">json</span>());
+<span class="line-number">4</span>
+<span class="line-number">5</span><span class="comment">// ==========================================</span>
+<span class="line-number">6</span><span class="comment">// Version Detection Middleware</span>
+<span class="line-number">7</span><span class="comment">// ==========================================</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span><span class="comment">// Middleware to extract API version from request headers</span>
+<span class="line-number">10</span><span class="keyword">const</span> <span class="function">apiVersion</span> = (req, res, next) =&gt; {
+<span class="line-number">11</span>    <span class="comment">// Check multiple possible header names</span>
+<span class="line-number">12</span>    <span class="keyword">const</span> version = req.headers[<span class="string">'accept-version'</span>] ||  <span class="comment">// Custom header</span>
+<span class="line-number">13</span>                   req.headers[<span class="string">'api-version'</span>] ||      <span class="comment">// Alternative header</span>
+<span class="line-number">14</span>                   <span class="string">'1.0'</span>;                              <span class="comment">// Default to v1</span>
+<span class="line-number">15</span>
+<span class="line-number">16</span>    <span class="comment">// Parse version as float for comparison</span>
+<span class="line-number">17</span>    req.apiVersion = <span class="function">parseFloat</span>(version);  <span class="comment">// Type: number</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span>    <span class="comment">// Set response header indicating version used</span>
+<span class="line-number">20</span>    res.<span class="function">set</span>(<span class="string">'API-Version'</span>, version);
+<span class="line-number">21</span>
+<span class="line-number">22</span>    <span class="function">next</span>();
+<span class="line-number">23</span>};
+<span class="line-number">24</span>
+<span class="line-number">25</span><span class="comment">// Apply version middleware to all routes</span>
+<span class="line-number">26</span>app.<span class="function">use</span>(apiVersion);
+<span class="line-number">27</span>
+<span class="line-number">28</span><span class="comment">// ==========================================</span>
+<span class="line-number">29</span><span class="comment">// Single Endpoint - Version-Aware Handler</span>
+<span class="line-number">30</span><span class="comment">// ==========================================</span>
+<span class="line-number">31</span>
+<span class="line-number">32</span><span class="comment">// Single endpoint that adapts response based on version</span>
+<span class="line-number">33</span>app.<span class="function">get</span>(<span class="string">'/api/users'</span>, (req, res) =&gt; {
+<span class="line-number">34</span>    <span class="keyword">const</span> users = [
+<span class="line-number">35</span>        {
+<span class="line-number">36</span>            <span class="property">id</span>: <span class="number">1</span>,
+<span class="line-number">37</span>            <span class="property">firstName</span>: <span class="string">'Alice'</span>,             <span class="comment">// Type: string</span>
+<span class="line-number">38</span>            <span class="property">lastName</span>: <span class="string">'Johnson'</span>,            <span class="comment">// Type: string</span>
+<span class="line-number">39</span>            <span class="property">email</span>: <span class="string">'alice@example.com'</span>    <span class="comment">// Type: string</span>
+<span class="line-number">40</span>        }
+<span class="line-number">41</span>    ];
+<span class="line-number">42</span>
+<span class="line-number">43</span>    <span class="comment">// Version-based response transformation</span>
+<span class="line-number">44</span>    <span class="keyword">if</span> (req.apiVersion &lt; <span class="number">2.0</span>) {
+<span class="line-number">45</span>        <span class="comment">// V1 format: combined name field (backward compatibility)</span>
+<span class="line-number">46</span>        <span class="keyword">const</span> v1Users = users.<span class="function">map</span>(u =&gt; ({
+<span class="line-number">47</span>            <span class="property">id</span>: u.id,
+<span class="line-number">48</span>            <span class="property">name</span>: <span class="template-string">`${u.firstName} ${u.lastName}`</span>,  <span class="comment">// Combined name</span>
+<span class="line-number">49</span>            <span class="property">email</span>: u.email
+<span class="line-number">50</span>        }));
+<span class="line-number">51</span>        <span class="keyword">return</span> res.<span class="function">json</span>(v1Users);
+<span class="line-number">52</span>    } <span class="keyword">else</span> {
+<span class="line-number">53</span>        <span class="comment">// V2 format: separate firstName/lastName with metadata</span>
+<span class="line-number">54</span>        <span class="keyword">return</span> res.<span class="function">json</span>({
+<span class="line-number">55</span>            <span class="property">version</span>: req.apiVersion,        <span class="comment">// Type: number</span>
+<span class="line-number">56</span>            <span class="property">data</span>: users,                    <span class="comment">// Type: User[]</span>
+<span class="line-number">57</span>            <span class="property">_links</span>: {
+<span class="line-number">58</span>                <span class="property">self</span>: <span class="string">'/api/users'</span>
+<span class="line-number">59</span>            }
+<span class="line-number">60</span>        });
+<span class="line-number">61</span>    }
+<span class="line-number">62</span>});
+<span class="line-number">63</span>
+<span class="line-number">64</span><span class="comment">// ==========================================</span>
+<span class="line-number">65</span><span class="comment">// Deprecation Warning Middleware</span>
+<span class="line-number">66</span><span class="comment">// ==========================================</span>
+<span class="line-number">67</span>
+<span class="line-number">68</span><span class="comment">// Check for deprecated versions and warn clients</span>
+<span class="line-number">69</span><span class="keyword">const</span> <span class="function">checkDeprecation</span> = (req, res, next) =&gt; {
+<span class="line-number">70</span>    <span class="keyword">if</span> (req.apiVersion &lt; <span class="number">1.5</span>) {
+<span class="line-number">71</span>        <span class="comment">// Add deprecation warning headers (RFC 7234)</span>
+<span class="line-number">72</span>        res.<span class="function">set</span>(<span class="string">'Warning'</span>, <span class="string">'299 - "API version deprecated. Please upgrade to v2.0"'</span>);
+<span class="line-number">73</span>        res.<span class="function">set</span>(<span class="string">'Sunset'</span>, <span class="string">'Sat, 31 Dec 2024 23:59:59 GMT'</span>);  <span class="comment">// RFC 8594</span>
+<span class="line-number">74</span>        res.<span class="function">set</span>(<span class="string">'Link'</span>, <span class="string">'&lt;/api/docs/migration&gt;; rel="deprecation"'</span>);
+<span class="line-number">75</span>    }
+<span class="line-number">76</span>    <span class="function">next</span>();
+<span class="line-number">77</span>};
+<span class="line-number">78</span>
+<span class="line-number">79</span><span class="comment">// Apply deprecation check to all routes</span>
+<span class="line-number">80</span>app.<span class="function">use</span>(checkDeprecation);
+<span class="line-number">81</span>
+<span class="line-number">82</span>app.<span class="function">listen</span>(<span class="number">3000</span>, () =&gt; <span class="builtin">console</span>.<span class="function">log</span>(<span class="string">'Header-versioned API running on port 3000'</span>));
+<span class="line-number">83</span>
+<span class="line-number">84</span><span class="comment">// ==========================================</span>
+<span class="line-number">85</span><span class="comment">// Example Usage with curl:</span>
+<span class="line-number">86</span><span class="comment">// ==========================================</span>
+<span class="line-number">87</span><span class="comment">// curl -H "Accept-Version: 1.0" http://localhost:3000/api/users</span>
+<span class="line-number">88</span><span class="comment">// curl -H "Accept-Version: 2.0" http://localhost:3000/api/users</span>
+</code></pre>
+            </div>
+            <div class="code-footer">
+                <span class="code-note">💡 <strong>Best for:</strong> APIs where clean URLs are prioritized over discoverability</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 3: Content Negotiation -->
+    <div id="content-neg-tab" class="tab-content">
+        <div class="code-block">
+            <div class="code-header">
+                <span class="language-badge javascript">JavaScript (Express.js)</span>
+                <span class="code-meta">Content Negotiation Versioning</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d5-content-neg')">Copy</button>
+            </div>
+            <p class="code-description">
+                <strong>Strategy:</strong> Version in Accept header using custom media types (<code>Accept: application/vnd.myapi.v2+json</code>)<br>
+                <strong>Pros:</strong> RESTful, follows HTTP standards, supports multiple formats (JSON, XML)<br>
+                <strong>Cons:</strong> Most complex, requires understanding of media types, harder for developers
+            </p>
+            <div class="code-content">
+                <pre class="line-numbers"><code class="language-javascript" id="code-d5-content-neg" data-type="api-versioning"><span class="line-number">1</span><span class="keyword">const</span> express = <span class="function">require</span>(<span class="string">'express'</span>);
+<span class="line-number">2</span><span class="keyword">const</span> app = <span class="function">express</span>();
+<span class="line-number">3</span>app.<span class="function">use</span>(express.<span class="function">json</span>());
+<span class="line-number">4</span>
+<span class="line-number">5</span><span class="comment">// ==========================================</span>
+<span class="line-number">6</span><span class="comment">// Media Type Parser</span>
+<span class="line-number">7</span><span class="comment">// ==========================================</span>
+<span class="line-number">8</span>
+<span class="line-number">9</span><span class="comment">// Parse custom vendor media types (application/vnd.myapi.v2+json)</span>
+<span class="line-number">10</span><span class="keyword">const</span> <span class="function">parseAcceptHeader</span> = (acceptHeader) =&gt; {
+<span class="line-number">11</span>    <span class="comment">// Regex to extract version from vendor media type</span>
+<span class="line-number">12</span>    <span class="comment">// Example: application/vnd.myapi.v2+json -&gt; version 2</span>
+<span class="line-number">13</span>    <span class="keyword">const</span> match = acceptHeader.<span class="function">match</span>(<span class="regex">/application\/vnd\.myapi\.v(\d+)\+json/</span>);
+<span class="line-number">14</span>    <span class="keyword">return</span> match ? <span class="function">parseInt</span>(match[<span class="number">1</span>]) : <span class="number">1</span>;  <span class="comment">// Default to v1</span>
+<span class="line-number">15</span>};
+<span class="line-number">16</span>
+<span class="line-number">17</span><span class="comment">// ==========================================</span>
+<span class="line-number">18</span><span class="comment">// Version-Aware Endpoint</span>
+<span class="line-number">19</span><span class="comment">// ==========================================</span>
+<span class="line-number">20</span>
+<span class="line-number">21</span>app.<span class="function">get</span>(<span class="string">'/api/users'</span>, (req, res) =&gt; {
+<span class="line-number">22</span>    <span class="comment">// Extract version from Accept header</span>
+<span class="line-number">23</span>    <span class="keyword">const</span> acceptHeader = req.headers.accept || <span class="string">'application/json'</span>;
+<span class="line-number">24</span>    <span class="keyword">const</span> version = <span class="function">parseAcceptHeader</span>(acceptHeader);  <span class="comment">// Type: number</span>
+<span class="line-number">25</span>
+<span class="line-number">26</span>    <span class="comment">// Sample user data</span>
+<span class="line-number">27</span>    <span class="keyword">const</span> users = [
+<span class="line-number">28</span>        {
+<span class="line-number">29</span>            <span class="property">id</span>: <span class="number">1</span>,
+<span class="line-number">30</span>            <span class="property">name</span>: <span class="string">'Alice'</span>,
+<span class="line-number">31</span>            <span class="property">email</span>: <span class="string">'alice@example.com'</span>,
+<span class="line-number">32</span>            <span class="property">createdAt</span>: <span class="string">'2024-01-01'</span>        <span class="comment">// Type: string (ISO date)</span>
+<span class="line-number">33</span>        }
+<span class="line-number">34</span>    ];
+<span class="line-number">35</span>
+<span class="line-number">36</span>    <span class="comment">// Switch response format based on version</span>
+<span class="line-number">37</span>    <span class="keyword">switch</span>(version) {
+<span class="line-number">38</span>        <span class="keyword">case</span> <span class="number">1</span>:
+<span class="line-number">39</span>            <span class="comment">// V1: Basic format - minimal fields</span>
+<span class="line-number">40</span>            res.<span class="function">set</span>(<span class="string">'Content-Type'</span>, <span class="string">'application/vnd.myapi.v1+json'</span>);
+<span class="line-number">41</span>            <span class="keyword">return</span> res.<span class="function">json</span>(
+<span class="line-number">42</span>                users.<span class="function">map</span>(({ id, name, email }) =&gt; ({ id, name, email }))
+<span class="line-number">43</span>            );
+<span class="line-number">44</span>
+<span class="line-number">45</span>        <span class="keyword">case</span> <span class="number">2</span>:
+<span class="line-number">46</span>            <span class="comment">// V2: Enhanced format with timestamps and metadata</span>
+<span class="line-number">47</span>            res.<span class="function">set</span>(<span class="string">'Content-Type'</span>, <span class="string">'application/vnd.myapi.v2+json'</span>);
+<span class="line-number">48</span>            <span class="keyword">return</span> res.<span class="function">json</span>({
+<span class="line-number">49</span>                <span class="property">version</span>: <span class="number">2</span>,                     <span class="comment">// Type: number</span>
+<span class="line-number">50</span>                <span class="property">data</span>: users,                     <span class="comment">// Type: User[]</span>
+<span class="line-number">51</span>                <span class="property">metadata</span>: {
+<span class="line-number">52</span>                    <span class="property">count</span>: users.length       <span class="comment">// Type: number</span>
+<span class="line-number">53</span>                }
+<span class="line-number">54</span>            });
+<span class="line-number">55</span>
+<span class="line-number">56</span>        <span class="keyword">default</span>:
+<span class="line-number">57</span>            <span class="comment">// Unsupported version - return 406 Not Acceptable</span>
+<span class="line-number">58</span>            <span class="keyword">return</span> res.<span class="function">status</span>(<span class="number">406</span>).<span class="function">json</span>({
+<span class="line-number">59</span>                <span class="property">error</span>: <span class="string">'Not Acceptable'</span>,
+<span class="line-number">60</span>                <span class="property">message</span>: <span class="template-string">`API version ${version} not supported`</span>,
+<span class="line-number">61</span>                <span class="property">supportedVersions</span>: [
+<span class="line-number">62</span>                    <span class="string">'application/vnd.myapi.v1+json'</span>,
+<span class="line-number">63</span>                    <span class="string">'application/vnd.myapi.v2+json'</span>
+<span class="line-number">64</span>                ]
+<span class="line-number">65</span>            });
+<span class="line-number">66</span>    }
+<span class="line-number">67</span>});
+<span class="line-number">68</span>
+<span class="line-number">69</span>app.<span class="function">listen</span>(<span class="number">3000</span>, () =&gt; <span class="builtin">console</span>.<span class="function">log</span>(<span class="string">'Content negotiation API running on port 3000'</span>));
+<span class="line-number">70</span>
+<span class="line-number">71</span><span class="comment">// ==========================================</span>
+<span class="line-number">72</span><span class="comment">// Example Usage with curl:</span>
+<span class="line-number">73</span><span class="comment">// ==========================================</span>
+<span class="line-number">74</span><span class="comment">// curl -H "Accept: application/vnd.myapi.v1+json" http://localhost:3000/api/users</span>
+<span class="line-number">75</span><span class="comment">// curl -H "Accept: application/vnd.myapi.v2+json" http://localhost:3000/api/users</span>
+</code></pre>
+            </div>
+            <div class="code-footer">
+                <span class="code-note">💡 <strong>Best for:</strong> RESTful purists and APIs supporting multiple content types</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SECTION 2: LOCALSTORAGE PRACTICAL -->
+<!-- ============================================ -->
+
+<div class="storage-demo">
+    <h4>💾 localStorage Practical: API Version Manager</h4>
+    <p>Track and manage API version compatibility on the client side:</p>
+    <div class="code-block">
+        <div class="code-header">
+            <span class="language-badge javascript">JavaScript (Client-Side)</span>
+            <span class="code-meta">Version Manager Class</span>
+            <button class="copy-btn" onclick="copyCode(this, 'storage-d5')">Copy</button>
+        </div>
+        <div class="code-content">
+            <pre class="line-numbers"><code class="language-javascript" id="storage-d5" data-type="client-side"><span class="line-number">1</span><span class="comment">// API Version Manager - Handle version compatibility on client side</span>
+<span class="line-number">2</span><span class="keyword">const</span> VERSION_KEY = <span class="string">'day5_api_version'</span>;
+<span class="line-number">3</span><span class="keyword">const</span> VERSION_HISTORY_KEY = <span class="string">'day5_version_history'</span>;
+<span class="line-number">4</span>
+<span class="line-number">5</span><span class="keyword">class</span> <span class="class-name">APIVersionManager</span> {
+<span class="line-number">6</span>    <span class="function">constructor</span>() {
+<span class="line-number">7</span>        <span class="keyword">this</span>.currentVersion = <span class="keyword">this</span>.<span class="function">loadVersion</span>() || <span class="string">'2.0'</span>;
+<span class="line-number">8</span>        <span class="keyword">this</span>.minSupportedVersion = <span class="string">'1.0'</span>;
+<span class="line-number">9</span>        <span class="keyword">this</span>.maxSupportedVersion = <span class="string">'2.0'</span>;
+<span class="line-number">10</span>    }
+<span class="line-number">11</span>
+<span class="line-number">12</span>    <span class="comment">// Load saved version preference from localStorage</span>
+<span class="line-number">13</span>    <span class="function">loadVersion</span>() {
+<span class="line-number">14</span>        <span class="keyword">return</span> localStorage.<span class="function">getItem</span>(VERSION_KEY);  <span class="comment">// Type: string | null</span>
+<span class="line-number">15</span>    }
+<span class="line-number">16</span>
+<span class="line-number">17</span>    <span class="comment">// Set preferred API version</span>
+<span class="line-number">18</span>    <span class="function">setVersion</span>(version) {
+<span class="line-number">19</span>        <span class="keyword">if</span> (!<span class="keyword">this</span>.<span class="function">isVersionSupported</span>(version)) {
+<span class="line-number">20</span>            <span class="keyword">throw new</span> <span class="class-name">Error</span>(<span class="template-string">`Version ${version} not supported`</span>);
+<span class="line-number">21</span>        }
+<span class="line-number">22</span>        <span class="keyword">this</span>.currentVersion = version;
+<span class="line-number">23</span>        localStorage.<span class="function">setItem</span>(VERSION_KEY, version);
+<span class="line-number">24</span>        <span class="keyword">this</span>.<span class="function">logVersionChange</span>(version);
+<span class="line-number">25</span>        <span class="builtin">console</span>.<span class="function">log</span>(<span class="template-string">`✅ API version set to ${version}`</span>);
+<span class="line-number">26</span>    }
+<span class="line-number">27</span>
+<span class="line-number">28</span>    <span class="comment">// Check if version is supported</span>
+<span class="line-number">29</span>    <span class="function">isVersionSupported</span>(version) {
+<span class="line-number">30</span>        <span class="keyword">const</span> v = <span class="function">parseFloat</span>(version);  <span class="comment">// Type: number</span>
+<span class="line-number">31</span>        <span class="keyword">return</span> v &gt;= <span class="function">parseFloat</span>(<span class="keyword">this</span>.minSupportedVersion) &amp;&amp;
+<span class="line-number">32</span>               v &lt;= <span class="function">parseFloat</span>(<span class="keyword">this</span>.maxSupportedVersion);
+<span class="line-number">33</span>    }
+<span class="line-number">34</span>
+<span class="line-number">35</span>    <span class="comment">// Get headers for API requests</span>
+<span class="line-number">36</span>    <span class="function">getHeaders</span>() {
+<span class="line-number">37</span>        <span class="keyword">return</span> {
+<span class="line-number">38</span>            <span class="string">'Accept-Version'</span>: <span class="keyword">this</span>.currentVersion,
+<span class="line-number">39</span>            <span class="string">'Accept'</span>: <span class="template-string">`application/vnd.myapi.v${<span class="keyword">this</span>.currentVersion.<span class="function">split</span>(<span class="string">'.'</span>)[<span class="number">0</span>]}+json`</span>
+<span class="line-number">40</span>        };
+<span class="line-number">41</span>    }
+<span class="line-number">42</span>
+<span class="line-number">43</span>    <span class="comment">// Log version changes for debugging and analytics</span>
+<span class="line-number">44</span>    <span class="function">logVersionChange</span>(version) {
+<span class="line-number">45</span>        <span class="keyword">const</span> history = <span class="builtin">JSON</span>.<span class="function">parse</span>(localStorage.<span class="function">getItem</span>(VERSION_HISTORY_KEY)) || [];
+<span class="line-number">46</span>        history.<span class="function">push</span>({
+<span class="line-number">47</span>            version,                                    <span class="comment">// Type: string</span>
+<span class="line-number">48</span>            <span class="property">timestamp</span>: <span class="keyword">new</span> <span class="class-name">Date</span>().<span class="function">toISOString</span>(),      <span class="comment">// Type: string</span>
+<span class="line-number">49</span>            <span class="property">userAgent</span>: navigator.userAgent           <span class="comment">// Type: string</span>
+<span class="line-number">50</span>        });
+<span class="line-number">51</span>        <span class="keyword">if</span> (history.length &gt; <span class="number">50</span>) history.<span class="function">shift</span>();  <span class="comment">// Keep last 50 entries</span>
+<span class="line-number">52</span>        localStorage.<span class="function">setItem</span>(VERSION_HISTORY_KEY, <span class="builtin">JSON</span>.<span class="function">stringify</span>(history));
+<span class="line-number">53</span>    }
+<span class="line-number">54</span>
+<span class="line-number">55</span>    <span class="comment">// Get version history</span>
+<span class="line-number">56</span>    <span class="function">getHistory</span>() {
+<span class="line-number">57</span>        <span class="keyword">return</span> <span class="builtin">JSON</span>.<span class="function">parse</span>(localStorage.<span class="function">getItem</span>(VERSION_HISTORY_KEY)) || [];
+<span class="line-number">58</span>    }
+<span class="line-number">59</span>
+<span class="line-number">60</span>    <span class="comment">// Handle deprecation warnings from response headers</span>
+<span class="line-number">61</span>    <span class="function">handleDeprecation</span>(response) {
+<span class="line-number">62</span>        <span class="keyword">const</span> warning = response.headers.<span class="function">get</span>(<span class="string">'Warning'</span>);
+<span class="line-number">63</span>        <span class="keyword">const</span> sunset = response.headers.<span class="function">get</span>(<span class="string">'Sunset'</span>);
+<span class="line-number">64</span>
+<span class="line-number">65</span>        <span class="keyword">if</span> (warning || sunset) {
+<span class="line-number">66</span>            <span class="builtin">console</span>.<span class="function">warn</span>(<span class="string">'⚠️ API Version Deprecation:'</span>);
+<span class="line-number">67</span>            <span class="keyword">if</span> (warning) <span class="builtin">console</span>.<span class="function">warn</span>(<span class="template-string">`Warning: ${warning}`</span>);
+<span class="line-number">68</span>            <span class="keyword">if</span> (sunset) <span class="builtin">console</span>.<span class="function">warn</span>(<span class="template-string">`Sunset Date: ${sunset}`</span>);
+<span class="line-number">69</span>
+<span class="line-number">70</span>            <span class="comment">// Show user notification</span>
+<span class="line-number">71</span>            <span class="keyword">this</span>.<span class="function">notifyDeprecation</span>(sunset);
+<span class="line-number">72</span>        }
+<span class="line-number">73</span>    }
+<span class="line-number">74</span>
+<span class="line-number">75</span>    <span class="function">notifyDeprecation</span>(sunsetDate) {
+<span class="line-number">76</span>        <span class="keyword">const</span> message = <span class="template-string">`This API version will be deprecated on ${sunsetDate}. Please upgrade.`</span>;
+<span class="line-number">77</span>        localStorage.<span class="function">setItem</span>(<span class="string">'api_deprecation_notice'</span>, message);
+<span class="line-number">78</span>    }
+<span class="line-number">79</span>}
+<span class="line-number">80</span>
+<span class="line-number">81</span><span class="comment">// ==========================================</span>
+<span class="line-number">82</span><span class="comment">// Usage Example</span>
+<span class="line-number">83</span><span class="comment">// ==========================================</span>
+<span class="line-number">84</span>
+<span class="line-number">85</span><span class="keyword">const</span> apiVersion = <span class="keyword">new</span> <span class="class-name">APIVersionManager</span>();
+<span class="line-number">86</span><span class="builtin">console</span>.<span class="function">log</span>(<span class="string">'Current version:'</span>, apiVersion.currentVersion);
+<span class="line-number">87</span>
+<span class="line-number">88</span><span class="comment">// Make versioned request</span>
+<span class="line-number">89</span><span class="keyword">async function</span> <span class="function">fetchUsers</span>() {
+<span class="line-number">90</span>    <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="function">fetch</span>(<span class="string">'/api/users'</span>, {
+<span class="line-number">91</span>        <span class="property">headers</span>: apiVersion.<span class="function">getHeaders</span>()
+<span class="line-number">92</span>    });
+<span class="line-number">93</span>
+<span class="line-number">94</span>    <span class="comment">// Check for deprecation warnings</span>
+<span class="line-number">95</span>    apiVersion.<span class="function">handleDeprecation</span>(response);
+<span class="line-number">96</span>
+<span class="line-number">97</span>    <span class="keyword">return</span> response.<span class="function">json</span>();
+<span class="line-number">98</span>}
+<span class="line-number">99</span>
+<span class="line-number">100</span><span class="comment">// Change version</span>
+<span class="line-number">101</span>apiVersion.<span class="function">setVersion</span>(<span class="string">'2.0'</span>);
+<span class="line-number">102</span><span class="builtin">console</span>.<span class="function">log</span>(<span class="string">'Version history:'</span>, apiVersion.<span class="function">getHistory</span>());
+</code></pre>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SECTION 3: BREAKING CHANGES EXERCISE -->
+<!-- ============================================ -->
+
+<div class="exercise">
+    <h4>🏋️ Exercise: Implement Breaking Changes Strategy</h4>
+    <p><strong>Scenario:</strong> You need to rename "email" to "emailAddress" and add a required "phoneNumber" field.</p>
+    <p><strong>Task:</strong> Implement both V1 and V2 endpoints that handle this breaking change gracefully.</p>
+    <p><strong>Requirements:</strong></p>
+    <ul>
+        <li>V1: Keep existing "email" field, phoneNumber optional</li>
+        <li>V2: Use "emailAddress" and require "phoneNumber"</li>
+        <li>Add deprecation headers to V1</li>
+        <li>Provide migration guide in V1 responses</li>
+    </ul>
+
+    <details>
+        <summary>💡 Hint</summary>
+        <p>Use separate route handlers for each version, and add transformation logic to map between old and new field names. Include migration info in V1 responses.</p>
+    </details>
+
+    <details>
+        <summary>✅ Solution</summary>
+
+        <!-- BEFORE/AFTER COMPARISON -->
+        <h5>Breaking Changes: Before vs After</h5>
+        <p class="code-description">See how the API structure changes between versions and how to handle backward compatibility.</p>
+
+        <div class="comparison-container">
+            <div class="comparison-tabs">
+                <button class="comparison-tab active" onclick="switchComparison(event, 'before-breaking')">
+                    ❌ BEFORE (V1 - Deprecated)
+                </button>
+                <button class="comparison-tab" onclick="switchComparison(event, 'after-breaking')">
+                    ✅ AFTER (V2 - Current)
+                </button>
+            </div>
+
+            <!-- BEFORE: V1 API -->
+            <div id="before-breaking" class="comparison-content active">
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="language-badge javascript">JavaScript (Express.js)</span>
+                        <span class="code-meta">V1 API - Deprecated with Migration Path</span>
+                        <button class="copy-btn" onclick="copyCode(this, 'code-d5-v1-deprecated')">Copy</button>
+                    </div>
+                    <p class="code-description">
+                        <strong>Status:</strong> Deprecated - Sunset Date: 2024-12-31<br>
+                        <strong>Changes:</strong> Uses old field names for backward compatibility
+                    </p>
+                    <div class="code-content">
+                        <pre class="line-numbers"><code class="language-javascript" id="code-d5-v1-deprecated" data-type="deprecated-api"><span class="line-number">1</span><span class="keyword">const</span> express = <span class="function">require</span>(<span class="string">'express'</span>);
+<span class="line-number">2</span><span class="keyword">const</span> app = <span class="function">express</span>();
+<span class="line-number">3</span>app.<span class="function">use</span>(express.<span class="function">json</span>());
+<span class="line-number">4</span>
+<span class="line-number">5</span><span class="comment">// Internal data model (V2 structure - source of truth)</span>
+<span class="line-number">6</span><span class="keyword">let</span> users = [
+<span class="line-number">7</span>    {
+<span class="line-number">8</span>        <span class="property">id</span>: <span class="number">1</span>,
+<span class="line-number">9</span>        <span class="property">name</span>: <span class="string">'Alice'</span>,
+<span class="line-number">10</span>        <span class="property">emailAddress</span>: <span class="string">'alice@example.com'</span>,  <span class="comment">// NEW field name</span>
+<span class="line-number">11</span>        <span class="property">phoneNumber</span>: <span class="string">'+1234567890'</span>          <span class="comment">// NEW required field</span>
+<span class="line-number">12</span>    }
+<span class="line-number">13</span>];
+<span class="line-number">14</span>
+<span class="line-number">15</span><span class="comment">// ==========================================</span>
+<span class="line-number">16</span><span class="comment">// V1 API - DEPRECATED</span>
+<span class="line-number">17</span><span class="comment">// ==========================================</span>
+<span class="line-number">18</span>
+<span class="line-number">19</span><span class="comment">// GET /api/v1/users - List users (V1 format)</span>
+<span class="line-number">20</span>app.<span class="function">get</span>(<span class="string">'/api/v1/users'</span>, (req, res) =&gt; {
+<span class="line-number">21</span>    <span class="comment">// Add RFC-compliant deprecation headers</span>
+<span class="line-number">22</span>    res.<span class="function">set</span>(<span class="string">'Warning'</span>, <span class="string">'299 - "API v1 deprecated. Migrate to v2 by 2024-12-31"'</span>);
+<span class="line-number">23</span>    res.<span class="function">set</span>(<span class="string">'Sunset'</span>, <span class="string">'Tue, 31 Dec 2024 23:59:59 GMT'</span>);  <span class="comment">// RFC 8594</span>
+<span class="line-number">24</span>    res.<span class="function">set</span>(<span class="string">'Link'</span>, <span class="string">'&lt;/api/v2/migration&gt;; rel="deprecation"'</span>);
+<span class="line-number">25</span>
+<span class="line-number">26</span>    <span class="comment">// Transform V2 data to V1 format (backward compatibility)</span>
+<span class="line-number">27</span>    <span class="keyword">const</span> v1Users = users.<span class="function">map</span>(u =&gt; ({
+<span class="line-number">28</span>        <span class="property">id</span>: u.id,
+<span class="line-number">29</span>        <span class="property">name</span>: u.name,
+<span class="line-number">30</span>        <span class="property">email</span>: u.emailAddress,               <span class="comment">// Map emailAddress → email</span>
+<span class="line-number">31</span>        <span class="property">phoneNumber</span>: u.phoneNumber || <span class="keyword">null</span>  <span class="comment">// Optional in V1</span>
+<span class="line-number">32</span>    }));
+<span class="line-number">33</span>
+<span class="line-number">34</span>    <span class="comment">// Include migration guide in response</span>
+<span class="line-number">35</span>    res.<span class="function">json</span>({
+<span class="line-number">36</span>        <span class="property">data</span>: v1Users,
+<span class="line-number">37</span>        <span class="property">_migration</span>: {
+<span class="line-number">38</span>            <span class="property">message</span>: <span class="string">'Please upgrade to v2'</span>,
+<span class="line-number">39</span>            <span class="property">changes</span>: [
+<span class="line-number">40</span>                <span class="string">'Field "email" renamed to "emailAddress"'</span>,
+<span class="line-number">41</span>                <span class="string">'Field "phoneNumber" is now required'</span>
+<span class="line-number">42</span>            ],
+<span class="line-number">43</span>            <span class="property">migrationGuide</span>: <span class="string">'/api/v2/migration'</span>
+<span class="line-number">44</span>        }
+<span class="line-number">45</span>    });
+<span class="line-number">46</span>});
+<span class="line-number">47</span>
+<span class="line-number">48</span><span class="comment">// POST /api/v1/users - Create user (V1 format)</span>
+<span class="line-number">49</span>app.<span class="function">post</span>(<span class="string">'/api/v1/users'</span>, (req, res) =&gt; {
+<span class="line-number">50</span>    <span class="keyword">const</span> { name, email, phoneNumber } = req.body;  <span class="comment">// V1 field names</span>
+<span class="line-number">51</span>
+<span class="line-number">52</span>    <span class="comment">// Transform V1 request to V2 internal format</span>
+<span class="line-number">53</span>    <span class="keyword">const</span> newUser = {
+<span class="line-number">54</span>        <span class="property">id</span>: users.length + <span class="number">1</span>,
+<span class="line-number">55</span>        name,
+<span class="line-number">56</span>        <span class="property">emailAddress</span>: email,                   <span class="comment">// Map email → emailAddress</span>
+<span class="line-number">57</span>        <span class="property">phoneNumber</span>: phoneNumber || <span class="string">'Not provided'</span>  <span class="comment">// Handle optional</span>
+<span class="line-number">58</span>    };
+<span class="line-number">59</span>
+<span class="line-number">60</span>    users.<span class="function">push</span>(newUser);
+<span class="line-number">61</span>
+<span class="line-number">62</span>    <span class="comment">// Return in V1 format (transform back)</span>
+<span class="line-number">63</span>    res.<span class="function">status</span>(<span class="number">201</span>).<span class="function">json</span>({
+<span class="line-number">64</span>        <span class="property">id</span>: newUser.id,
+<span class="line-number">65</span>        <span class="property">name</span>: newUser.name,
+<span class="line-number">66</span>        <span class="property">email</span>: newUser.emailAddress,  <span class="comment">// Map back to old name</span>
+<span class="line-number">67</span>        <span class="property">phoneNumber</span>: newUser.phoneNumber
+<span class="line-number">68</span>    });
+<span class="line-number">69</span>});
+</code></pre>
+                    </div>
+                    <div class="code-footer">
+                        <span class="code-note">⚠️ <strong>Deprecated:</strong> Provides backward compatibility with transformation layer</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AFTER: V2 API -->
+            <div id="after-breaking" class="comparison-content">
+                <div class="code-block">
+                    <div class="code-header">
+                        <span class="language-badge javascript">JavaScript (Express.js)</span>
+                        <span class="code-meta">V2 API - Current with Strict Validation</span>
+                        <button class="copy-btn" onclick="copyCode(this, 'code-d5-v2-current')">Copy</button>
+                    </div>
+                    <p class="code-description">
+                        <strong>Status:</strong> Current - Recommended for all new integrations<br>
+                        <strong>Changes:</strong> Uses new field names with strict validation
+                    </p>
+                    <div class="code-content">
+                        <pre class="line-numbers"><code class="language-javascript" id="code-d5-v2-current" data-type="current-api"><span class="line-number">1</span><span class="comment">// ==========================================</span>
+<span class="line-number">2</span><span class="comment">// V2 API - CURRENT</span>
+<span class="line-number">3</span><span class="comment">// ==========================================</span>
+<span class="line-number">4</span>
+<span class="line-number">5</span><span class="comment">// GET /api/v2/users - List users (V2 format)</span>
+<span class="line-number">6</span>app.<span class="function">get</span>(<span class="string">'/api/v2/users'</span>, (req, res) =&gt; {
+<span class="line-number">7</span>    <span class="comment">// Return data in native V2 format (no transformation needed)</span>
+<span class="line-number">8</span>    res.<span class="function">json</span>({
+<span class="line-number">9</span>        <span class="property">version</span>: <span class="string">'2.0'</span>,
+<span class="line-number">10</span>        <span class="property">data</span>: users  <span class="comment">// Native V2 structure with emailAddress and phoneNumber</span>
+<span class="line-number">11</span>    });
+<span class="line-number">12</span>});
+<span class="line-number">13</span>
+<span class="line-number">14</span><span class="comment">// POST /api/v2/users - Create user (V2 format with validation)</span>
+<span class="line-number">15</span>app.<span class="function">post</span>(<span class="string">'/api/v2/users'</span>, (req, res) =&gt; {
+<span class="line-number">16</span>    <span class="keyword">const</span> { name, emailAddress, phoneNumber } = req.body;  <span class="comment">// V2 field names</span>
+<span class="line-number">17</span>
+<span class="line-number">18</span>    <span class="comment">// ==========================================</span>
+<span class="line-number">19</span>    <span class="comment">// Strict Validation for V2 Required Fields</span>
+<span class="line-number">20</span>    <span class="comment">// ==========================================</span>
+<span class="line-number">21</span>    <span class="keyword">if</span> (!name || !emailAddress || !phoneNumber) {
+<span class="line-number">22</span>        <span class="keyword">return</span> res.<span class="function">status</span>(<span class="number">400</span>).<span class="function">json</span>({
+<span class="line-number">23</span>            <span class="property">error</span>: <span class="string">'Validation failed'</span>,
+<span class="line-number">24</span>            <span class="property">details</span>: [
+<span class="line-number">25</span>                !name &amp;&amp; {
+<span class="line-number">26</span>                    <span class="property">field</span>: <span class="string">'name'</span>,
+<span class="line-number">27</span>                    <span class="property">message</span>: <span class="string">'Required'</span>
+<span class="line-number">28</span>                },
+<span class="line-number">29</span>                !emailAddress &amp;&amp; {
+<span class="line-number">30</span>                    <span class="property">field</span>: <span class="string">'emailAddress'</span>,      <span class="comment">// NEW field name</span>
+<span class="line-number">31</span>                    <span class="property">message</span>: <span class="string">'Required'</span>
+<span class="line-number">32</span>                },
+<span class="line-number">33</span>                !phoneNumber &amp;&amp; {
+<span class="line-number">34</span>                    <span class="property">field</span>: <span class="string">'phoneNumber'</span>,       <span class="comment">// NOW required (was optional in V1)</span>
+<span class="line-number">35</span>                    <span class="property">message</span>: <span class="string">'Required in v2'</span>
+<span class="line-number">36</span>                }
+<span class="line-number">37</span>            ].<span class="function">filter</span>(<span class="builtin">Boolean</span>)  <span class="comment">// Remove null entries</span>
+<span class="line-number">38</span>        });
+<span class="line-number">39</span>    }
+<span class="line-number">40</span>
+<span class="line-number">41</span>    <span class="comment">// Create user with V2 structure (no transformation)</span>
+<span class="line-number">42</span>    <span class="keyword">const</span> newUser = {
+<span class="line-number">43</span>        <span class="property">id</span>: users.length + <span class="number">1</span>,
+<span class="line-number">44</span>        name,                      <span class="comment">// Type: string</span>
+<span class="line-number">45</span>        emailAddress,              <span class="comment">// Type: string (NEW name)</span>
+<span class="line-number">46</span>        phoneNumber                <span class="comment">// Type: string (NOW required)</span>
+<span class="line-number">47</span>    };
+<span class="line-number">48</span>
+<span class="line-number">49</span>    users.<span class="function">push</span>(newUser);
+<span class="line-number">50</span>
+<span class="line-number">51</span>    <span class="comment">// Return created user in V2 format</span>
+<span class="line-number">52</span>    res.<span class="function">status</span>(<span class="number">201</span>).<span class="function">json</span>({
+<span class="line-number">53</span>        <span class="property">version</span>: <span class="string">'2.0'</span>,
+<span class="line-number">54</span>        <span class="property">data</span>: newUser
+<span class="line-number">55</span>    });
+<span class="line-number">56</span>});
+<span class="line-number">57</span>
+<span class="line-number">58</span>app.<span class="function">listen</span>(<span class="number">3000</span>, () =&gt; <span class="builtin">console</span>.<span class="function">log</span>(<span class="string">'API v1 (deprecated) and v2 (current) running'</span>));
+</code></pre>
+                    </div>
+                    <div class="code-footer">
+                        <span class="code-note">✅ <strong>Current:</strong> Uses new field structure with strict validation</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COMPARISON TABLE -->
+        <div class="comparison-table">
+            <h6>📊 Breaking Changes Summary</h6>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>V1 (Deprecated)</th>
+                        <th>V2 (Current)</th>
+                        <th>Breaking?</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Email Field</strong></td>
+                        <td><code>email</code></td>
+                        <td><code>emailAddress</code></td>
+                        <td><span class="badge-breaking">Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phone Number</strong></td>
+                        <td>Optional</td>
+                        <td>Required</td>
+                        <td><span class="badge-breaking">Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Response Format</strong></td>
+                        <td>Simple array</td>
+                        <td>Wrapped with metadata</td>
+                        <td><span class="badge-breaking">Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Deprecation Headers</strong></td>
+                        <td>Warning, Sunset, Link</td>
+                        <td>None</td>
+                        <td><span class="badge-info">N/A</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Migration Guide</strong></td>
+                        <td>Included in response</td>
+                        <td>Not needed</td>
+                        <td><span class="badge-info">N/A</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </details>
+</div>
+
+<!-- ============================================ -->
+<!-- ADDITIONAL CSS FOR TABS AND COMPARISONS -->
+<!-- ============================================ -->
+
+<style>
+/* Tabbed Interface Styles */
+.code-tabs {
+    margin: 20px 0;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--code-bg, #f8f9fa);
+}
+
+.tab-buttons {
+    display: flex;
+    background: var(--tab-bg, #e9ecef);
+    border-bottom: 2px solid var(--border-color, #dee2e6);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 15px 20px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary, #6c757d);
+    transition: all 0.3s ease;
+    border-right: 1px solid var(--border-color, #dee2e6);
+}
+
+.tab-btn:last-child {
+    border-right: none;
+}
+
+.tab-btn:hover {
+    background: var(--hover-bg, #f8f9fa);
+    color: var(--primary-color, #007bff);
+}
+
+.tab-btn.active {
+    background: var(--active-bg, #fff);
+    color: var(--primary-color, #007bff);
+    border-bottom: 3px solid var(--primary-color, #007bff);
+}
+
+.tab-icon {
+    margin-right: 8px;
+    font-size: 16px;
+}
+
+.tab-content {
+    display: none;
+    padding: 20px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Comparison Container Styles */
+.comparison-container {
+    margin: 20px 0;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.comparison-tabs {
+    display: flex;
+    background: var(--tab-bg, #e9ecef);
+    border-bottom: 2px solid var(--border-color, #dee2e6);
+}
+
+.comparison-tab {
+    flex: 1;
+    padding: 15px 20px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary, #6c757d);
+    transition: all 0.3s ease;
+    border-right: 1px solid var(--border-color, #dee2e6);
+}
+
+.comparison-tab:last-child {
+    border-right: none;
+}
+
+.comparison-tab:hover {
+    background: var(--hover-bg, #f8f9fa);
+}
+
+.comparison-tab.active {
+    background: var(--active-bg, #fff);
+    color: var(--primary-color, #28a745);
+    border-bottom: 3px solid var(--primary-color, #28a745);
+}
+
+.comparison-content {
+    display: none;
+    padding: 20px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.comparison-content.active {
+    display: block;
+}
+
+/* Comparison Table */
+.comparison-table {
+    margin: 20px 0;
+    padding: 20px;
+    background: var(--table-bg, #f8f9fa);
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #e0e0e0);
+}
+
+.comparison-table h6 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--text-primary, #212529);
+}
+
+.comparison-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.comparison-table th,
+.comparison-table td {
+    padding: 12px;
+    text-align: left;
+    border: 1px solid var(--border-color, #dee2e6);
+}
+
+.comparison-table th {
+    background: var(--header-bg, #e9ecef);
+    font-weight: 600;
+    color: var(--text-primary, #212529);
+}
+
+.comparison-table code {
+    background: var(--code-inline-bg, #f1f3f5);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+    color: var(--code-color, #d63384);
+}
+
+.badge-breaking {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #dc3545;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-info {
+    display: inline-block;
+    padding: 4px 8px;
+    background: #6c757d;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Code Block Enhancements */
+.code-description {
+    margin: 10px 0;
+    padding: 12px;
+    background: var(--info-bg, #e7f3ff);
+    border-left: 4px solid var(--info-color, #0066cc);
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.code-description strong {
+    color: var(--text-primary, #212529);
+}
+
+.code-description code {
+    background: rgba(255, 255, 255, 0.8);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+.code-footer {
+    padding: 12px 15px;
+    background: var(--footer-bg, #f8f9fa);
+    border-top: 1px solid var(--border-color, #e0e0e0);
+    font-size: 13px;
+}
+
+.code-note {
+    color: var(--text-secondary, #6c757d);
+}
+
+.language-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--badge-bg, #28a745);
+    color: white;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-right: 10px;
+}
+
+.language-badge.javascript {
+    background: #f7df1e;
+    color: #000;
+}
+
+.code-meta {
+    font-size: 13px;
+    color: var(--text-secondary, #6c757d);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+
+<!-- ============================================ -->
+<!-- JAVASCRIPT FOR TAB SWITCHING -->
+<!-- ============================================ -->
+
+<script>
+// Switch between versioning strategy tabs
+function switchTab(event, tabId) {
+    // Get the parent tab container
+    const tabContainer = event.target.closest('.code-tabs');
+
+    // Hide all tab contents
+    const contents = tabContainer.querySelectorAll('.tab-content');
+    contents.forEach(content => content.classList.remove('active'));
+
+    // Deactivate all tab buttons
+    const buttons = tabContainer.querySelectorAll('.tab-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+
+    // Show selected tab content
+    document.getElementById(tabId).classList.add('active');
+
+    // Activate clicked button
+    event.target.classList.add('active');
+}
+
+// Switch between before/after comparison
+function switchComparison(event, comparisonId) {
+    // Get the parent comparison container
+    const comparisonContainer = event.target.closest('.comparison-container');
+
+    // Hide all comparison contents
+    const contents = comparisonContainer.querySelectorAll('.comparison-content');
+    contents.forEach(content => content.classList.remove('active'));
+
+    // Deactivate all comparison tabs
+    const tabs = comparisonContainer.querySelectorAll('.comparison-tab');
+    tabs.forEach(tab => tab.classList.remove('active'));
+
+    // Show selected comparison content
+    document.getElementById(comparisonId).classList.add('active');
+
+    // Activate clicked tab
+    event.target.classList.add('active');
+}
+</script>

@@ -1,0 +1,399 @@
+<div id="day4" class="day-content">
+    <h2>📘 Day 4: Authentication & Authorization</h2>
+
+    <div class="objectives">
+        <h3>🎯 Learning Objectives</h3>
+        <ul>
+            <li>Understand the difference between authentication and authorization</li>
+            <li>Implement JWT-based authentication</li>
+            <li>Create protected routes with middleware</li>
+            <li>Build role-based access control (RBAC)</li>
+            <li>Secure API endpoints properly</li>
+        </ul>
+    </div>
+
+    <h3>📚 Core Concepts</h3>
+
+    <div class="concept-grid">
+        <div class="concept-card">
+            <h4>🔐 Authentication</h4>
+            <p>Verifies WHO you are. "Prove your identity." Examples: username/password, JWT tokens, OAuth.</p>
+        </div>
+        <div class="concept-card">
+            <h4>🛡️ Authorization</h4>
+            <p>Determines WHAT you can do. "Are you allowed to access this resource?" Examples: admin vs user roles.</p>
+        </div>
+        <div class="concept-card">
+            <h4>🎫 JWT</h4>
+            <p>Self-contained token with encoded user data. Stateless - server doesn't store sessions.</p>
+        </div>
+        <div class="concept-card">
+            <h4>🔑 API Keys</h4>
+            <p>Simple tokens for service-to-service auth. Easy to implement but less secure than JWT for users.</p>
+        </div>
+    </div>
+
+    <h3>💻 Code Examples</h3>
+
+    <h4>1. JWT Authentication System</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - JWT Auth (npm install jsonwebtoken bcryptjs)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d4-1')">Copy</button>
+        </div>
+        <pre><code id="code-d4-1">const express = require('express');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+
+const app = express();
+app.use(express.json());
+
+const JWT_SECRET = 'your-secret-key-change-in-production';
+const JWT_EXPIRES = '24h';
+
+// Simulated user database
+let users = [];
+
+// Register new user
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { email, password, role = 'user' } = req.body;
+
+        if (users.find(u => u.email === email)) {
+            return res.status(409).json({ error: 'Email already registered' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = {
+            id: users.length + 1,
+            email,
+            password: hashedPassword,
+            role
+        };
+        users.push(user);
+
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: user.role },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES }
+        );
+
+        res.status(201).json({
+            message: 'User registered successfully',
+            token,
+            user: { id: user.id, email: user.email, role: user.role }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Registration failed' });
+    }
+});
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const user = users.find(u => u.email === email);
+
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: user.role },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES }
+        );
+
+        res.json({
+            message: 'Login successful',
+            token,
+            user: { id: user.id, email: user.email, role: user.role }
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+// Auth middleware
+const authenticate = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (error) {
+        res.status(401).json({ error: 'Invalid or expired token' });
+    }
+};
+
+// Protected route
+app.get('/api/profile', authenticate, (req, res) => {
+    res.json({
+        message: 'Protected data',
+        user: req.user
+    });
+});
+
+app.listen(3000, () => console.log('Auth server running'));
+</code></pre>
+    </div>
+
+    <h4>2. Role-Based Access Control (RBAC)</h4>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - RBAC Middleware</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d4-2')">Copy</button>
+        </div>
+        <pre><code id="code-d4-2">// Role-based authorization middleware
+const authorize = (...allowedRoles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+
+        if (!allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({
+                error: 'Forbidden',
+                message: `Role '${req.user.role}' cannot access this resource`
+            });
+        }
+
+        next();
+    };
+};
+
+// Usage examples:
+// Anyone authenticated can access
+app.get('/api/dashboard', authenticate, (req, res) => {
+    res.json({ message: 'Dashboard data' });
+});
+
+// Only admins can access
+app.get('/api/admin/users', authenticate, authorize('admin'), (req, res) => {
+    res.json({ users: users.map(u => ({ id: u.id, email: u.email, role: u.role })) });
+});
+
+// Admins and managers can access
+app.get('/api/reports', authenticate, authorize('admin', 'manager'), (req, res) => {
+    res.json({ message: 'Reports data' });
+});
+
+// Resource ownership check
+const authorizeOwner = (req, res, next) => {
+    const resourceUserId = parseInt(req.params.userId);
+
+    if (req.user.role === 'admin') {
+        return next(); // Admins can access any resource
+    }
+
+    if (req.user.id !== resourceUserId) {
+        return res.status(403).json({ error: 'You can only access your own resources' });
+    }
+
+    next();
+};
+
+// Users can only update their own profile
+app.put('/api/users/:userId', authenticate, authorizeOwner, (req, res) => {
+    res.json({ message: 'Profile updated' });
+});
+</code></pre>
+    </div>
+
+    <div class="storage-demo">
+        <h4>💾 localStorage Practical: Token Manager</h4>
+        <p>Manage JWT tokens client-side:</p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Token Manager</span>
+                <button class="copy-btn" onclick="copyCode(this, 'storage-d4')">Copy</button>
+            </div>
+            <pre><code id="storage-d4">// Token Manager - Client-side JWT handling
+const TOKEN_KEY = 'day4_auth_token';
+const USER_KEY = 'day4_user_data';
+
+// Save token after login
+function saveAuth(token, user) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+    console.log('✅ Auth saved for:', user.email);
+}
+
+// Get token for API requests
+function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+}
+
+// Get current user
+function getCurrentUser() {
+    const userData = localStorage.getItem(USER_KEY);
+    return userData ? JSON.parse(userData) : null;
+}
+
+// Check if token is expired (decode JWT without verification)
+function isTokenExpired() {
+    const token = getToken();
+    if (!token) return true;
+
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp * 1000 < Date.now();
+    } catch {
+        return true;
+    }
+}
+
+// Create authenticated fetch helper
+async function authFetch(url, options = {}) {
+    const token = getToken();
+    if (!token || isTokenExpired()) {
+        throw new Error('Authentication required');
+    }
+
+    return fetch(url, {
+        ...options,
+        headers: {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
+}
+
+// Logout - clear all auth data
+function logout() {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    console.log('👋 Logged out');
+}
+
+// Usage example:
+saveAuth('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', { id: 1, email: 'test@example.com', role: 'user' });
+console.log('Current user:', getCurrentUser());
+console.log('Token expired?', isTokenExpired());
+</code></pre>
+        </div>
+    </div>
+
+    <div class="exercise">
+        <h4>🏋️ Exercise: Build Protected Todo API</h4>
+        <p><strong>Task:</strong> Create a Todo API where users can only access their own todos.</p>
+        <ul>
+            <li>POST /api/auth/register - Create account</li>
+            <li>POST /api/auth/login - Get JWT token</li>
+            <li>GET /api/todos - List user's todos only</li>
+            <li>POST /api/todos - Create todo for logged-in user</li>
+        </ul>
+
+        <details>
+            <summary>✅ Solution</summary>
+            <div class="code-block">
+                <div class="code-header">
+                    <span>JavaScript - Protected Todo API</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'solution-d4')">Copy</button>
+                </div>
+                <pre><code id="solution-d4">const express = require('express');
+const jwt = require('jsonwebtoken');
+const app = express();
+app.use(express.json());
+
+const SECRET = 'todo-secret';
+let users = [];
+let todos = [];
+
+const auth = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'No token' });
+    try {
+        req.user = jwt.verify(token, SECRET);
+        next();
+    } catch { res.status(401).json({ error: 'Invalid token' }); }
+};
+
+app.post('/api/auth/register', (req, res) => {
+    const { email, password } = req.body;
+    if (users.find(u => u.email === email)) {
+        return res.status(409).json({ error: 'Email exists' });
+    }
+    const user = { id: users.length + 1, email, password };
+    users.push(user);
+    const token = jwt.sign({ id: user.id, email }, SECRET, { expiresIn: '1h' });
+    res.status(201).json({ token });
+});
+
+app.post('/api/auth/login', (req, res) => {
+    const { email, password } = req.body;
+    const user = users.find(u => u.email === email && u.password === password);
+    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    const token = jwt.sign({ id: user.id, email }, SECRET, { expiresIn: '1h' });
+    res.json({ token });
+});
+
+app.get('/api/todos', auth, (req, res) => {
+    const userTodos = todos.filter(t => t.userId === req.user.id);
+    res.json(userTodos);
+});
+
+app.post('/api/todos', auth, (req, res) => {
+    const todo = {
+        id: todos.length + 1,
+        userId: req.user.id,
+        title: req.body.title,
+        completed: false
+    };
+    todos.push(todo);
+    res.status(201).json(todo);
+});
+
+app.listen(3000);
+</code></pre>
+            </div>
+        </details>
+    </div>
+
+    <div class="quiz">
+        <h3>✅ Check Your Knowledge</h3>
+
+        <div class="quiz-question">
+            <p><strong>Q1:</strong> What's the difference between 401 and 403 status codes?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d4q1" value="a"> A) 401 = not logged in, 403 = logged in but not permitted</label>
+                <label><input type="radio" name="d4q1" value="b"> B) 401 = server error, 403 = client error</label>
+                <label><input type="radio" name="d4q1" value="c"> C) They mean the same thing</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d4q1', 'a', 'd4q1-fb')">Check Answer</button>
+            <div class="feedback" id="d4q1-fb"></div>
+        </div>
+
+        <div class="quiz-question">
+            <p><strong>Q2:</strong> Where should you send a JWT token in API requests?</p>
+            <div class="quiz-options">
+                <label><input type="radio" name="d4q2" value="a"> A) In the URL query string</label>
+                <label><input type="radio" name="d4q2" value="b"> B) In the Authorization header as "Bearer {token}"</label>
+                <label><input type="radio" name="d4q2" value="c"> C) In the request body</label>
+            </div>
+            <button class="check-answer" onclick="checkAnswer('d4q2', 'b', 'd4q2-fb')">Check Answer</button>
+            <div class="feedback" id="d4q2-fb"></div>
+        </div>
+    </div>
+
+    <div class="takeaways">
+        <h3>🎯 Key Takeaways</h3>
+        <ul>
+            <li>Authentication verifies identity; Authorization determines permissions</li>
+            <li>JWT tokens are stateless and self-contained</li>
+            <li>Use middleware to protect routes and check roles</li>
+            <li>Always hash passwords - never store plain text</li>
+        </ul>
+        <p><strong>Tomorrow:</strong> API Versioning - strategies for evolving your API without breaking clients.</p>
+    </div>
+
+    <button class="complete-day" onclick="completeDay(4)">✓ Mark Day 4 Complete</button>
+</div>

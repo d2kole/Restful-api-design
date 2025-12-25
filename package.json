@@ -1,0 +1,22 @@
+{
+  "name": "restful-api-design-7day",
+  "version": "1.0.0",
+  "description": "7-Day RESTful API Design Learning Module with build system",
+  "main": "build/build.js",
+  "scripts": {
+    "build": "node build/build.js",
+    "watch": "nodemon --watch src -e html,css,js --exec npm run build",
+    "dev": "npm run build && npm run watch",
+    "clean": "node -e \"require('fs').rmSync('dist', {recursive:true,force:true})\""
+  },
+  "keywords": [
+    "rest",
+    "api",
+    "learning",
+    "tutorial"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}

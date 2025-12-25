@@ -1,0 +1,72 @@
+/* ========================================
+   BASE STYLES
+   CSS Reset, Variables, and Body Styles
+   ======================================== */
+
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* CSS Variables - Light Mode (Default) */
+:root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f5f7fa;
+    --bg-tertiary: #e8ecf1;
+    --text-primary: #2c3e50;
+    --text-secondary: #7f8c8d;
+    --accent: #003366;
+    --accent-hover: #004488;
+    --accent-light: #e6f0ff;
+    --success: #27ae60;
+    --success-light: #d5f4e3;
+    --warning: #FFB81C;
+    --warning-light: #fff8e6;
+    --error: #e74c3c;
+    --code-bg: #1e2a3a;
+    --code-text: #ecf0f1;
+    --border: #e1e8ed;
+    --shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* CSS Variables - Dark Mode */
+body.dark-mode {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-tertiary: #0f3460;
+    --text-primary: #eee;
+    --text-secondary: #bdc3c7;
+    --accent: #5dade2;
+    --accent-hover: #7ec8e8;
+    --accent-light: #1a3a5c;
+    --success: #2ecc71;
+    --warning: #FFB81C;
+    --code-bg: #0a1628;
+    --code-text: #ecf0f1;
+    --border: #34495e;
+}
+
+/* Body Base Styles */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Typography Base */
+code {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+}
+
+/* Inline code in paragraphs and lists */
+p code, li code {
+    background-color: var(--bg-tertiary);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: var(--accent);
+}
