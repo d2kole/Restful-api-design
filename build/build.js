@@ -35,8 +35,8 @@ const config = {
     silent: args.includes('--silent') || args.includes('-s'),
 
     // File processing order (dependency-aware)
-    cssOrder: ['base.css', 'layout.css', 'components.css', 'themes.css'],
-    jsOrder: ['navigation.js', 'progress.js', 'code-blocks.js', 'quiz.js', 'main.js'],
+    cssOrder: ['base.css', 'layout.css', 'components.css', 'themes.css', 'prism.css'],
+    jsOrder: ['prism-core.js', 'navigation.js', 'progress.js', 'code-blocks.js', 'quiz.js', 'main.js'],
 
     // Template placeholders
     placeholders: {
@@ -288,11 +288,13 @@ function build() {
     const finalJS = minifyJS(wrappedJS);
 
     // Inject into template
+    // Note: Using function replacer to avoid special replacement patterns ($&, $', $`, $n)
+    // being interpreted in the content (Prism.js contains $' in regex patterns)
     log.info('Injecting assets...');
     html = html
-        .replace(config.placeholders.css, finalCSS)
-        .replace(config.placeholders.js, finalJS)
-        .replace(config.placeholders.content, contentResult.content);
+        .replace(config.placeholders.css, () => finalCSS)
+        .replace(config.placeholders.js, () => finalJS)
+        .replace(config.placeholders.content, () => contentResult.content);
 
     // Verify placeholders were replaced
     for (const [name, placeholder] of Object.entries(config.placeholders)) {
