@@ -7,7 +7,10 @@
     "build": "node build/build.js",
     "watch": "nodemon --watch src -e html,css,js --exec npm run build",
     "dev": "npm run build && npm run watch",
-    "clean": "node -e \"require('fs').rmSync('dist', {recursive:true,force:true})\""
+    "clean": "node -e \"require('fs').rmSync('dist', {recursive:true,force:true})\"",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "keywords": [
     "rest",
@@ -17,6 +20,7 @@
   ],
   "license": "MIT",
   "devDependencies": {
+    "jest": "^29.7.0",
     "nodemon": "^3.1.11"
   }
 }

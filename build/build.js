@@ -401,16 +401,50 @@ Examples:
     process.exit(0);
 }
 
-try {
-    if (config.watch) {
-        watch();
-    } else {
-        build();
+// Only run CLI when executed directly (not when required as module)
+if (require.main === module) {
+    try {
+        if (config.watch) {
+            watch();
+        } else {
+            build();
+        }
+    } catch (error) {
+        log.error(`Build failed: ${error.message}`);
+        if (config.verbose) {
+            console.error(error.stack);
+        }
+        process.exit(1);
     }
-} catch (error) {
-    log.error(`Build failed: ${error.message}`);
-    if (config.verbose) {
-        console.error(error.stack);
-    }
-    process.exit(1);
 }
+
+// ============================================================================
+// Module Exports (for testing)
+// ============================================================================
+
+module.exports = {
+    // Configuration
+    config,
+
+    // File operations
+    readFile,
+    getFiles,
+    ensureDir,
+
+    // Concatenation
+    concatenateFiles,
+    getDayContent,
+
+    // Minification
+    minifyCSS,
+    minifyJS,
+
+    // Build utilities
+    wrapInIIFE,
+    formatBytes,
+    build,
+
+    // Internal utilities (for testing)
+    fileCache,
+    log
+};
