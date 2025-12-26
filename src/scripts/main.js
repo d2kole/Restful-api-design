@@ -32,7 +32,7 @@ function loadTheme() {
 
 /**
  * Initialize the application when DOM is ready
- * Sets up theme, loads progress, renders navigation, and initializes code blocks
+ * Sets up theme, loads progress, renders navigation, initializes code blocks, and search
  */
 document.addEventListener('DOMContentLoaded', () => {
     loadTheme();
@@ -40,4 +40,5 @@ document.addEventListener('DOMContentLoaded', () => {
     renderNav();
     updateProgress();
     initializeCodeBlocks();
+    initializeSearch();
 });
