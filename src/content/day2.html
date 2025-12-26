@@ -70,16 +70,49 @@
     <h3>💻 Code Examples</h3>
 
     <h4>1. Nested Resources</h4>
+    <p><strong>Description:</strong> Implement URL hierarchies to express parent-child relationships between resources. This example shows how to structure routes for users and their orders using Express.js.</p>
+
     <div class="code-block">
         <div class="code-header">
-            <span>JavaScript - Nested Routes</span>
+            <span>JavaScript - Basic Nested Route Pattern</span>
             <button class="copy-btn" onclick="copyCode(this, 'code-d2-1')">Copy</button>
         </div>
-        <pre><code id="code-d2-1">const express = require('express');
+        <pre><code id="code-d2-1" class="language-javascript" data-type="resource-design" data-description="Simple pattern for accessing user orders through nested routes">// ========================================
+// GET all orders for a specific user (nested resource)
+// ========================================
+app.get('/api/users/:userId/orders', (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const user = users.find(u => u.id === userId);
+
+    // Validate parent resource exists
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Return child resources filtered by parent ID
+    const userOrders = orders.filter(o => o.userId === userId);
+    res.json(userOrders);
+});
+</code></pre>
+    </div>
+
+    <details>
+        <summary>📋 View Full Nested Resources Implementation</summary>
+
+        <p><strong>Setup & Data Models</strong></p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Express Setup & Sample Data</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d2-1-full-a')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d2-1-full-a" class="language-javascript" data-type="resource-design" data-description="Express server initialization with sample user and order data">// ========================================
+// Express Setup
+// ========================================
+const express = require('express');
 const app = express();
 app.use(express.json());
 
+// ========================================
 // Sample data with relationships
+// ========================================
 let users = [
     { id: 1, name: 'Alice', email: 'alice@example.com' },
     { id: 2, name: 'Bob', email: 'bob@example.com' }
@@ -90,20 +123,42 @@ let orders = [
     { id: 2, userId: 1, product: 'Mouse', total: 29.99, status: 'delivered' },
     { id: 3, userId: 2, product: 'Keyboard', total: 79.99, status: 'pending' }
 ];
+</code></pre>
+        </div>
 
+        <p><strong>User Collection Endpoints</strong></p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - User Resource Routes</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d2-1-full-b')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d2-1-full-b" class="language-javascript" data-type="resource-design" data-description="Routes for retrieving all users and individual users by ID">// ========================================
 // GET all users
+// ========================================
 app.get('/api/users', (req, res) => {
     res.json(users);
 });
 
+// ========================================
 // GET single user
+// ========================================
 app.get('/api/users/:userId', (req, res) => {
     const user = users.find(u => u.id === parseInt(req.params.userId));
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
 });
+</code></pre>
+        </div>
 
-// GET all orders for a specific user (nested resource)
+        <p><strong>Nested Order Endpoints</strong></p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Nested Order Routes</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d2-1-full-c')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d2-1-full-c" class="language-javascript" data-type="resource-design" data-description="Complete nested routes for managing orders within user context">// ========================================
+// GET all orders for a specific user
+// ========================================
 app.get('/api/users/:userId/orders', (req, res) => {
     const userId = parseInt(req.params.userId);
     const user = users.find(u => u.id === userId);
@@ -113,7 +168,9 @@ app.get('/api/users/:userId/orders', (req, res) => {
     res.json(userOrders);
 });
 
+// ========================================
 // GET specific order for a user
+// ========================================
 app.get('/api/users/:userId/orders/:orderId', (req, res) => {
     const userId = parseInt(req.params.userId);
     const orderId = parseInt(req.params.orderId);
@@ -124,7 +181,9 @@ app.get('/api/users/:userId/orders/:orderId', (req, res) => {
     res.json(order);
 });
 
+// ========================================
 // POST create new order for user
+// ========================================
 app.post('/api/users/:userId/orders', (req, res) => {
     const userId = parseInt(req.params.userId);
     const user = users.find(u => u.id === userId);
@@ -141,20 +200,69 @@ app.post('/api/users/:userId/orders', (req, res) => {
     res.status(201).json(newOrder);
 });
 
+// ========================================
+// Start Server
+// ========================================
 app.listen(3000, () => console.log('Server running on port 3000'));
+</code></pre>
+        </div>
+    </details>
+
+    <h4>2. Query Parameters: Filtering, Sorting, Pagination</h4>
+    <p><strong>Description:</strong> Use query parameters to provide flexible data filtering, sorting, and pagination without creating separate endpoints. This pattern keeps URLs clean while supporting complex queries.</p>
+
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Basic Query Parameter Pattern</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d2-2')">Copy</button>
+        </div>
+        <pre><code id="code-d2-2" class="language-javascript" data-type="resource-design" data-description="Simple filtering and pagination using query parameters">// ========================================
+// GET /api/products with basic filtering & pagination
+// Example: /api/products?category=electronics&page=1&limit=10
+// ========================================
+app.get('/api/products', (req, res) => {
+    let result = [...products];
+
+    // Apply category filter if provided
+    if (req.query.category) {
+        result = result.filter(p => p.category === req.query.category);
+    }
+
+    // Pagination with defaults
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const startIndex = (page - 1) * limit;
+
+    res.json({
+        data: result.slice(startIndex, startIndex + limit),
+        pagination: {
+            currentPage: page,
+            totalItems: result.length,
+            totalPages: Math.ceil(result.length / limit)
+        }
+    });
+});
 </code></pre>
     </div>
 
-    <h4>2. Query Parameters: Filtering, Sorting, Pagination</h4>
-    <div class="code-block">
-        <div class="code-header">
-            <span>JavaScript - Query Parameters</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d2-2')">Copy</button>
-        </div>
-        <pre><code id="code-d2-2">const express = require('express');
+    <details>
+        <summary>📋 View Complete Query Parameters Implementation</summary>
+
+        <p><strong>Sample Data</strong></p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Product Data Model</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d2-2-full-a')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d2-2-full-a" class="language-javascript" data-type="resource-design" data-description="Sample product dataset with multiple filterable attributes">// ========================================
+// Express Setup
+// ========================================
+const express = require('express');
 const app = express();
 
+// ========================================
 // Sample products data
+// ========================================
 let products = [
     { id: 1, name: 'Laptop', price: 999, category: 'electronics', inStock: true },
     { id: 2, name: 'Coffee Mug', price: 15, category: 'kitchen', inStock: true },
@@ -162,12 +270,23 @@ let products = [
     { id: 4, name: 'Desk Lamp', price: 45, category: 'office', inStock: true },
     { id: 5, name: 'Notebook', price: 8, category: 'office', inStock: true }
 ];
+</code></pre>
+        </div>
 
-// GET /api/products with filtering, sorting, and pagination
+        <p><strong>Complete Endpoint with Filtering</strong></p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Multiple Filter Implementation</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d2-2-full-b')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d2-2-full-b" class="language-javascript" data-type="resource-design" data-description="Comprehensive filtering logic for category, stock status, and price ranges">// ========================================
+// GET /api/products - Filtering Logic
+// Example: /api/products?category=electronics&inStock=true&minPrice=50
+// ========================================
 app.get('/api/products', (req, res) => {
     let result = [...products];
 
-    // FILTERING: ?category=electronics&inStock=true
+    // FILTERING: Apply multiple filters
     if (req.query.category) {
         result = result.filter(p => p.category === req.query.category);
     }
@@ -182,7 +301,20 @@ app.get('/api/products', (req, res) => {
         result = result.filter(p => p.price <= parseFloat(req.query.maxPrice));
     }
 
+    // Continue to sorting & pagination...
+});
+</code></pre>
+        </div>
+
+        <p><strong>Sorting Implementation</strong></p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Dynamic Sorting Logic</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d2-2-full-c')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d2-2-full-c" class="language-javascript" data-type="resource-design" data-description="Flexible sorting by any field with ascending or descending order">    // ========================================
     // SORTING: ?sort=price&order=desc
+    // ========================================
     if (req.query.sort) {
         const sortField = req.query.sort;
         const sortOrder = req.query.order === 'desc' ? -1 : 1;
@@ -192,8 +324,18 @@ app.get('/api/products', (req, res) => {
             return 0;
         });
     }
+</code></pre>
+        </div>
 
+        <p><strong>Pagination with Metadata</strong></p>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Pagination & Response Format</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d2-2-full-d')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d2-2-full-d" class="language-javascript" data-type="resource-design" data-description="Pagination logic with comprehensive metadata for client navigation">    // ========================================
     // PAGINATION: ?page=1&limit=10
+    // ========================================
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const startIndex = (page - 1) * limit;
@@ -201,7 +343,9 @@ app.get('/api/products', (req, res) => {
 
     const paginatedResult = result.slice(startIndex, endIndex);
 
+    // ========================================
     // Response with metadata
+    // ========================================
     res.json({
         data: paginatedResult,
         pagination: {
@@ -217,26 +361,33 @@ app.get('/api/products', (req, res) => {
 
 app.listen(3000, () => console.log('Server running'));
 
+// ========================================
 // Example queries:
+// ========================================
 // GET /api/products?category=electronics
 // GET /api/products?minPrice=50&maxPrice=500
 // GET /api/products?sort=price&order=desc
 // GET /api/products?page=1&limit=2
 </code></pre>
-    </div>
+        </div>
+    </details>
 
     <div class="storage-demo">
         <h4>💾 localStorage Practical: Query Builder</h4>
-        <p>Build and save your favorite API query combinations:</p>
+        <p><strong>Description:</strong> Store and reuse common query parameter combinations for quick access to frequently-used API queries. This localStorage example tracks usage patterns.</p>
         <div class="code-block">
             <div class="code-header">
-                <span>JavaScript - Query Builder Storage</span>
+                <span>JavaScript - Query Builder with localStorage</span>
                 <button class="copy-btn" onclick="copyCode(this, 'storage-d2')">Copy</button>
             </div>
-            <pre><code id="storage-d2">// Query Builder - Save your favorite queries
+            <pre><code id="storage-d2" class="language-javascript" data-type="resource-design" data-description="Save and retrieve API query configurations using localStorage">// ========================================
+// Query Builder - Save your favorite queries
+// ========================================
 const QUERIES_KEY = 'day2_saved_queries';
 
+// ========================================
 // Save a query configuration
+// ========================================
 function saveQuery(name, params) {
     const queries = JSON.parse(localStorage.getItem(QUERIES_KEY)) || {};
     queries[name] = {
@@ -248,7 +399,9 @@ function saveQuery(name, params) {
     console.log(`✅ Saved query: ${name}`);
 }
 
+// ========================================
 // Get a saved query and build URL
+// ========================================
 function getQuery(name, baseUrl = '/api/products') {
     const queries = JSON.parse(localStorage.getItem(QUERIES_KEY)) || {};
     if (!queries[name]) {
@@ -262,7 +415,9 @@ function getQuery(name, baseUrl = '/api/products') {
     return `${baseUrl}?${queryString}`;
 }
 
+// ========================================
 // List all saved queries
+// ========================================
 function listQueries() {
     const queries = JSON.parse(localStorage.getItem(QUERIES_KEY)) || {};
     console.table(Object.entries(queries).map(([name, data]) => ({
@@ -272,7 +427,9 @@ function listQueries() {
     })));
 }
 
-// Usage:
+// ========================================
+// Usage Examples:
+// ========================================
 saveQuery('cheap-electronics', { category: 'electronics', maxPrice: 200, sort: 'price' });
 saveQuery('in-stock-office', { category: 'office', inStock: 'true' });
 console.log(getQuery('cheap-electronics')); // /api/products?category=electronics&maxPrice=200&sort=price
@@ -299,12 +456,16 @@ listQueries();
 
         <details>
             <summary>✅ Solution</summary>
+            <p><strong>Description:</strong> Complete blog API implementation demonstrating nested resources (posts and comments) with query parameter filtering by author.</p>
             <div class="code-block">
                 <div class="code-header">
                     <span>JavaScript - Blog API Solution</span>
                     <button class="copy-btn" onclick="copyCode(this, 'solution-d2')">Copy</button>
                 </div>
-                <pre><code id="solution-d2">const express = require('express');
+                <pre><code id="solution-d2" class="language-javascript" data-type="resource-design" data-description="Complete blog API with nested comments and author filtering">// ========================================
+// Setup & Data
+// ========================================
+const express = require('express');
 const app = express();
 app.use(express.json());
 
@@ -318,7 +479,10 @@ let comments = [
     { id: 2, postId: 1, author: 'charlie', text: 'Very helpful' }
 ];
 
+// ========================================
 // GET posts with optional author filter
+// Example: /api/posts?author=alice
+// ========================================
 app.get('/api/posts', (req, res) => {
     let result = [...posts];
     if (req.query.author) {
@@ -327,7 +491,10 @@ app.get('/api/posts', (req, res) => {
     res.json(result);
 });
 
-// GET comments for a post
+// ========================================
+// GET comments for a post (nested)
+// Example: /api/posts/1/comments
+// ========================================
 app.get('/api/posts/:postId/comments', (req, res) => {
     const postId = parseInt(req.params.postId);
     const post = posts.find(p => p.id === postId);
@@ -337,7 +504,10 @@ app.get('/api/posts/:postId/comments', (req, res) => {
     res.json(postComments);
 });
 
-// POST new comment
+// ========================================
+// POST new comment to a post
+// Example: POST /api/posts/1/comments
+// ========================================
 app.post('/api/posts/:postId/comments', (req, res) => {
     const postId = parseInt(req.params.postId);
     const post = posts.find(p => p.id === postId);

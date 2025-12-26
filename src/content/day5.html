@@ -36,12 +36,48 @@
     <h3>💻 Code Examples</h3>
 
     <h4>1. URI Versioning Implementation</h4>
+    <p>Version numbers in the URL path make API versions explicit and easy to discover. This example shows v1 (simple) and v2 (enhanced with metadata) running side by side.</p>
+
     <div class="code-block">
         <div class="code-header">
-            <span>JavaScript - URI Versioning</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d5-1')">Copy</button>
+            <span>JavaScript - URI Versioning (Simple)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d5-1-simple')">Copy</button>
         </div>
-        <pre><code id="code-d5-1">const express = require('express');
+        <pre><code id="code-d5-1-simple"
+                  class="language-javascript"
+                  data-type="versioning"
+                  data-description="Basic URI versioning setup with v1 and v2 routes">// ========================================
+// URI VERSIONING - Route-based version control
+// ========================================
+
+// V1 API - Original version (simple format)
+app.get('/api/v1/users', (req, res) => {
+    res.json(users);
+});
+
+// V2 API - Enhanced with metadata and HATEOAS
+app.get('/api/v2/users', (req, res) => {
+    res.json({
+        version: '2.0',
+        data: users,
+        metadata: { total: users.length, page: 1, perPage: 10 },
+        _links: { self: '/api/v2/users', docs: '/api/v2/docs' }
+    });
+});
+</code></pre>
+    </div>
+
+    <details>
+        <summary>Show Full Implementation</summary>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - URI Versioning (Full)</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d5-1-full')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d5-1-full"
+                      class="language-javascript"
+                      data-type="versioning"
+                      data-description="Complete URI versioning with v1/v2 routes, single resource endpoints, and version requirement middleware">const express = require('express');
 const app = express();
 app.use(express.json());
 
@@ -50,21 +86,30 @@ let users = [
     { id: 1, name: 'Alice', email: 'alice@example.com' }
 ];
 
-// V1 API - Original version
+// ========================================
+// V1 API - ORIGINAL VERSION
+// ========================================
+
+// V1: List all users (simple format)
 app.get('/api/v1/users', (req, res) => {
-    // V1 returns simple format
+    // V1 returns simple format - just the array
     res.json(users);
 });
 
+// V1: Get single user
 app.get('/api/v1/users/:id', (req, res) => {
     const user = users.find(u => u.id === parseInt(req.params.id));
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
 });
 
-// V2 API - Enhanced with metadata and HATEOAS
+// ========================================
+// V2 API - ENHANCED VERSION
+// ========================================
+
+// V2: List all users (enhanced with metadata and HATEOAS)
 app.get('/api/v2/users', (req, res) => {
-    // V2 returns enhanced format with metadata
+    // V2 returns enhanced format with metadata wrapper
     res.json({
         version: '2.0',
         data: users,
@@ -80,11 +125,12 @@ app.get('/api/v2/users', (req, res) => {
     });
 });
 
+// V2: Get single user (with hypermedia links)
 app.get('/api/v2/users/:id', (req, res) => {
     const user = users.find(u => u.id === parseInt(req.params.id));
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    // V2 includes hypermedia links
+    // V2 includes hypermedia links for discoverability
     res.json({
         version: '2.0',
         data: user,
@@ -96,7 +142,11 @@ app.get('/api/v2/users/:id', (req, res) => {
     });
 });
 
-// Version middleware to handle unversioned requests
+// ========================================
+// VERSION REQUIREMENT MIDDLEWARE
+// ========================================
+
+// Reject unversioned requests
 app.use('/api/users*', (req, res, next) => {
     res.status(400).json({
         error: 'API version required',
@@ -107,24 +157,68 @@ app.use('/api/users*', (req, res, next) => {
 
 app.listen(3000, () => console.log('Versioned API running'));
 </code></pre>
-    </div>
+        </div>
+    </details>
 
     <h4>2. Header-Based Versioning</h4>
+    <p>Pass version information through HTTP headers instead of URLs. This keeps endpoints clean but requires clients to send proper headers with each request.</p>
+
     <div class="code-block">
         <div class="code-header">
-            <span>JavaScript - Header Versioning</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d5-2')">Copy</button>
+            <span>JavaScript - Header Versioning (Simple)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d5-2-simple')">Copy</button>
         </div>
-        <pre><code id="code-d5-2">const express = require('express');
+        <pre><code id="code-d5-2-simple"
+                  class="language-javascript"
+                  data-type="versioning"
+                  data-description="Header-based version extraction and response adaptation">// ========================================
+// HEADER VERSIONING - Version from request headers
+// ========================================
+
+// Extract version from Accept-Version header
+const apiVersion = (req, res, next) => {
+    const version = req.headers['accept-version'] || '1.0';
+    req.apiVersion = parseFloat(version);
+    res.set('API-Version', version);
+    next();
+};
+
+// Single endpoint adapts based on version
+app.get('/api/users', (req, res) => {
+    if (req.apiVersion < 2.0) {
+        // V1: combined name
+        return res.json(users.map(u => ({ ...u, name: `${u.firstName} ${u.lastName}` })));
+    }
+    // V2: separate firstName/lastName
+    return res.json({ version: req.apiVersion, data: users });
+});
+</code></pre>
+    </div>
+
+    <details>
+        <summary>Show Full Implementation</summary>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Header Versioning (Full)</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d5-2-full')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d5-2-full"
+                      class="language-javascript"
+                      data-type="versioning"
+                      data-description="Complete header versioning with middleware, version routing, and deprecation warnings">const express = require('express');
 const app = express();
 app.use(express.json());
 
+// ========================================
+// VERSION EXTRACTION MIDDLEWARE
+// ========================================
+
 // Middleware to extract API version from header
 const apiVersion = (req, res, next) => {
-    // Check Accept-Version header
+    // Check Accept-Version header (or fallback to api-version)
     const version = req.headers['accept-version'] ||
                    req.headers['api-version'] ||
-                   '1.0';
+                   '1.0'; // Default to v1.0
 
     req.apiVersion = parseFloat(version);
 
@@ -135,6 +229,10 @@ const apiVersion = (req, res, next) => {
 };
 
 app.use(apiVersion);
+
+// ========================================
+// VERSION-AWARE ENDPOINT
+// ========================================
 
 // Single endpoint that adapts based on version
 app.get('/api/users', (req, res) => {
@@ -160,6 +258,10 @@ app.get('/api/users', (req, res) => {
     }
 });
 
+// ========================================
+// DEPRECATION WARNING MIDDLEWARE
+// ========================================
+
 // Deprecation middleware for old versions
 const checkDeprecation = (req, res, next) => {
     if (req.apiVersion < 1.5) {
@@ -178,17 +280,62 @@ app.listen(3000, () => console.log('Header-versioned API running'));
 // curl -H "Accept-Version: 1.0" http://localhost:3000/api/users
 // curl -H "Accept-Version: 2.0" http://localhost:3000/api/users
 </code></pre>
-    </div>
+        </div>
+    </details>
 
     <h4>3. Content Negotiation Versioning</h4>
+    <p>Use custom media types in the Accept header to specify API version. Follows REST principles by treating different versions as different resource representations.</p>
+
     <div class="code-block">
         <div class="code-header">
-            <span>JavaScript - Content Negotiation</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d5-3')">Copy</button>
+            <span>JavaScript - Content Negotiation (Simple)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d5-3-simple')">Copy</button>
         </div>
-        <pre><code id="code-d5-3">const express = require('express');
+        <pre><code id="code-d5-3-simple"
+                  class="language-javascript"
+                  data-type="versioning"
+                  data-description="Content negotiation using custom media types for versioning">// ========================================
+// CONTENT NEGOTIATION - Version via Accept header
+// ========================================
+
+// Parse custom media types (e.g., application/vnd.myapi.v2+json)
+const parseAcceptHeader = (acceptHeader) => {
+    const match = acceptHeader.match(/application\/vnd\.myapi\.v(\d+)\+json/);
+    return match ? parseInt(match[1]) : 1;
+};
+
+app.get('/api/users', (req, res) => {
+    const version = parseAcceptHeader(req.headers.accept || 'application/json');
+
+    // V1: Basic format
+    if (version === 1) {
+        res.set('Content-Type', 'application/vnd.myapi.v1+json');
+        return res.json(users.map(({ id, name, email }) => ({ id, name, email })));
+    }
+    // V2: Enhanced with metadata
+    res.set('Content-Type', 'application/vnd.myapi.v2+json');
+    return res.json({ version: 2, data: users, metadata: { count: users.length } });
+});
+</code></pre>
+    </div>
+
+    <details>
+        <summary>Show Full Implementation</summary>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Content Negotiation (Full)</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d5-3-full')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d5-3-full"
+                      class="language-javascript"
+                      data-type="versioning"
+                      data-description="Complete content negotiation with media type parsing, version routing, and 406 Not Acceptable handling">const express = require('express');
 const app = express();
 app.use(express.json());
+
+// ========================================
+// MEDIA TYPE PARSER
+// ========================================
 
 // Parse custom media types
 const parseAcceptHeader = (acceptHeader) => {
@@ -196,6 +343,10 @@ const parseAcceptHeader = (acceptHeader) => {
     const match = acceptHeader.match(/application\/vnd\.myapi\.v(\d+)\+json/);
     return match ? parseInt(match[1]) : 1;
 };
+
+// ========================================
+// VERSION-AWARE ENDPOINT
+// ========================================
 
 app.get('/api/users', (req, res) => {
     const acceptHeader = req.headers.accept || 'application/json';
@@ -207,12 +358,12 @@ app.get('/api/users', (req, res) => {
 
     switch(version) {
         case 1:
-            // V1: Basic format
+            // V1: Basic format (only id, name, email)
             res.set('Content-Type', 'application/vnd.myapi.v1+json');
             return res.json(users.map(({ id, name, email }) => ({ id, name, email })));
 
         case 2:
-            // V2: Enhanced format with timestamps
+            // V2: Enhanced format with timestamps and metadata
             res.set('Content-Type', 'application/vnd.myapi.v2+json');
             return res.json({
                 version: 2,
@@ -221,6 +372,7 @@ app.get('/api/users', (req, res) => {
             });
 
         default:
+            // Unsupported version - return 406 Not Acceptable
             return res.status(406).json({
                 error: 'Not Acceptable',
                 message: `API version ${version} not supported`,
@@ -238,17 +390,60 @@ app.listen(3000, () => console.log('Content negotiation API running'));
 // curl -H "Accept: application/vnd.myapi.v1+json" http://localhost:3000/api/users
 // curl -H "Accept: application/vnd.myapi.v2+json" http://localhost:3000/api/users
 </code></pre>
-    </div>
+        </div>
+    </details>
 
     <div class="storage-demo">
         <h4>💾 localStorage Practical: API Version Manager</h4>
         <p>Track and manage API version compatibility on the client side:</p>
         <div class="code-block">
             <div class="code-header">
-                <span>JavaScript - Version Manager</span>
-                <button class="copy-btn" onclick="copyCode(this, 'storage-d5')">Copy</button>
+                <span>JavaScript - Version Manager (Simple)</span>
+                <button class="copy-btn" onclick="copyCode(this, 'storage-d5-simple')">Copy</button>
             </div>
-            <pre><code id="storage-d5">// API Version Manager - Handle version compatibility
+            <pre><code id="storage-d5-simple"
+                      class="language-javascript"
+                      data-type="caching"
+                      data-description="Client-side API version manager with localStorage persistence">// ========================================
+// API VERSION MANAGER - Client-side version tracking
+// ========================================
+
+class APIVersionManager {
+    constructor() {
+        this.currentVersion = localStorage.getItem('day5_api_version') || '2.0';
+    }
+
+    setVersion(version) {
+        this.currentVersion = version;
+        localStorage.setItem('day5_api_version', version);
+        console.log(`Version set to ${version}`);
+    }
+
+    getHeaders() {
+        return {
+            'Accept-Version': this.currentVersion,
+            'Accept': `application/vnd.myapi.v${this.currentVersion.split('.')[0]}+json`
+        };
+    }
+}
+
+// Usage
+const apiVersion = new APIVersionManager();
+const response = await fetch('/api/users', { headers: apiVersion.getHeaders() });
+</code></pre>
+        </div>
+
+        <details>
+            <summary>Show Full Implementation</summary>
+            <div class="code-block">
+                <div class="code-header">
+                    <span>JavaScript - Version Manager (Full)</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'storage-d5-full')">Copy</button>
+                </div>
+                <pre class="line-numbers"><code id="storage-d5-full"
+                          class="language-javascript"
+                          data-type="caching"
+                          data-description="Complete API version manager with version validation, history tracking, and deprecation handling">// API Version Manager - Handle version compatibility
 const VERSION_KEY = 'day5_api_version';
 const VERSION_HISTORY_KEY = 'day5_version_history';
 
@@ -258,6 +453,10 @@ class APIVersionManager {
         this.minSupportedVersion = '1.0';
         this.maxSupportedVersion = '2.0';
     }
+
+    // ========================================
+    // VERSION MANAGEMENT
+    // ========================================
 
     // Load saved version preference
     loadVersion() {
@@ -290,6 +489,10 @@ class APIVersionManager {
         };
     }
 
+    // ========================================
+    // VERSION HISTORY TRACKING
+    // ========================================
+
     // Log version changes for debugging
     logVersionChange(version) {
         const history = JSON.parse(localStorage.getItem(VERSION_HISTORY_KEY)) || [];
@@ -306,6 +509,10 @@ class APIVersionManager {
     getHistory() {
         return JSON.parse(localStorage.getItem(VERSION_HISTORY_KEY)) || [];
     }
+
+    // ========================================
+    // DEPRECATION HANDLING
+    // ========================================
 
     // Handle deprecation warnings
     handleDeprecation(response) {
@@ -348,7 +555,8 @@ async function fetchUsers() {
 apiVersion.setVersion('2.0');
 console.log('Version history:', apiVersion.getHistory());
 </code></pre>
-        </div>
+            </div>
+        </details>
     </div>
 
     <div class="exercise">
@@ -372,10 +580,51 @@ console.log('Version history:', apiVersion.getHistory());
             <summary>✅ Solution</summary>
             <div class="code-block">
                 <div class="code-header">
-                    <span>JavaScript - Breaking Changes Solution</span>
-                    <button class="copy-btn" onclick="copyCode(this, 'solution-d5')">Copy</button>
+                    <span>JavaScript - Breaking Changes (Simple)</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'solution-d5-simple')">Copy</button>
                 </div>
-                <pre><code id="solution-d5">const express = require('express');
+                <pre><code id="solution-d5-simple"
+                          class="language-javascript"
+                          data-type="versioning"
+                          data-description="Basic breaking changes handling with field mapping between versions">// ========================================
+// BREAKING CHANGES - Field renaming with backward compatibility
+// ========================================
+
+// V1 API - Deprecated (email field)
+app.get('/api/v1/users', (req, res) => {
+    res.set('Warning', '299 - "API v1 deprecated. Migrate to v2 by 2024-12-31"');
+    const v1Users = users.map(u => ({
+        ...u,
+        email: u.emailAddress, // Map emailAddress back to email
+        emailAddress: undefined
+    }));
+    res.json({ data: v1Users, _migration: { message: 'Please upgrade to v2' } });
+});
+
+// V2 API - Current (emailAddress + phoneNumber required)
+app.post('/api/v2/users', (req, res) => {
+    const { name, emailAddress, phoneNumber } = req.body;
+    if (!emailAddress || !phoneNumber) {
+        return res.status(400).json({ error: 'emailAddress and phoneNumber required' });
+    }
+    const newUser = { id: users.length + 1, name, emailAddress, phoneNumber };
+    users.push(newUser);
+    res.status(201).json({ version: '2.0', data: newUser });
+});
+</code></pre>
+            </div>
+
+            <details>
+                <summary>Show Full Solution</summary>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>JavaScript - Breaking Changes (Full)</span>
+                        <button class="copy-btn" onclick="copyCode(this, 'solution-d5-full')">Copy</button>
+                    </div>
+                    <pre class="line-numbers"><code id="solution-d5-full"
+                              class="language-javascript"
+                              data-type="versioning"
+                              data-description="Complete breaking changes solution with v1/v2 field mapping, deprecation headers, validation, and migration guides">const express = require('express');
 const app = express();
 app.use(express.json());
 
@@ -384,14 +633,18 @@ let users = [
     { id: 1, name: 'Alice', emailAddress: 'alice@example.com', phoneNumber: '+1234567890' }
 ];
 
-// V1 API - Deprecated
+// ========================================
+// V1 API - DEPRECATED
+// ========================================
+
+// V1: List users (with deprecation headers)
 app.get('/api/v1/users', (req, res) => {
     // Add deprecation headers
     res.set('Warning', '299 - "API v1 deprecated. Migrate to v2 by 2024-12-31"');
     res.set('Sunset', 'Tue, 31 Dec 2024 23:59:59 GMT');
     res.set('Link', '</api/v2/migration>; rel="deprecation"');
 
-    // Transform to V1 format
+    // Transform to V1 format (emailAddress → email)
     const v1Users = users.map(u => ({
         id: u.id,
         name: u.name,
@@ -412,6 +665,7 @@ app.get('/api/v1/users', (req, res) => {
     });
 });
 
+// V1: Create user (accepts old field names)
 app.post('/api/v1/users', (req, res) => {
     const { name, email, phoneNumber } = req.body;
 
@@ -434,7 +688,11 @@ app.post('/api/v1/users', (req, res) => {
     });
 });
 
-// V2 API - Current
+// ========================================
+// V2 API - CURRENT
+// ========================================
+
+// V2: List users
 app.get('/api/v2/users', (req, res) => {
     res.json({
         version: '2.0',
@@ -442,6 +700,7 @@ app.get('/api/v2/users', (req, res) => {
     });
 });
 
+// V2: Create user (requires new field names)
 app.post('/api/v2/users', (req, res) => {
     const { name, emailAddress, phoneNumber } = req.body;
 
@@ -470,7 +729,8 @@ app.post('/api/v2/users', (req, res) => {
 
 app.listen(3000);
 </code></pre>
-            </div>
+                </div>
+            </details>
         </details>
     </div>
 

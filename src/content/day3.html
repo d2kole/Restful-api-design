@@ -39,12 +39,52 @@
     <h3>💻 Code Examples</h3>
 
     <h4>1. Consistent Error Response Format</h4>
+    <p class="code-description">
+        <strong>Problem solved:</strong> Standardizes error responses across your entire API so clients can reliably parse and handle errors.
+    </p>
+
     <div class="code-block">
         <div class="code-header">
-            <span>JavaScript - Error Response Structure</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d3-1')">Copy</button>
+            <span>JavaScript - Error Response Structure (Simple)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d3-1-simple')">Copy</button>
         </div>
-        <pre><code id="code-d3-1">// Custom Error class for API errors
+        <pre><code id="code-d3-1-simple"
+                   class="language-javascript"
+                   data-type="error-handling"
+                   data-description="Custom error class with factory methods for common HTTP errors">// Custom Error class for API errors
+class ApiError extends Error {
+    constructor(statusCode, message, details = null) {
+        super(message);
+        this.statusCode = statusCode;
+        this.details = details;
+        this.timestamp = new Date().toISOString();
+    }
+}
+
+// Factory functions for common errors
+const Errors = {
+    notFound: (resource) => new ApiError(404, `${resource} not found`),
+    badRequest: (message, details) => new ApiError(400, message, details),
+    validation: (errors) => new ApiError(422, 'Validation failed', errors)
+};
+
+module.exports = { ApiError, Errors };
+</code></pre>
+    </div>
+
+    <details>
+        <summary>📖 View Full Implementation with JSON Serialization</summary>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Complete Error Class</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d3-1-full')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d3-1-full"
+                       class="language-javascript"
+                       data-type="error-handling"
+                       data-description="Full error class with JSON serialization and all factory methods">// ========================================
+// Custom Error Class
+// ========================================
 class ApiError extends Error {
     constructor(statusCode, message, details = null) {
         super(message);
@@ -53,6 +93,7 @@ class ApiError extends Error {
         this.timestamp = new Date().toISOString();
     }
 
+    // Automatic JSON serialization for responses
     toJSON() {
         return {
             error: {
@@ -65,7 +106,9 @@ class ApiError extends Error {
     }
 }
 
-// Factory functions for common errors
+// ========================================
+// Factory Functions (Common Errors)
+// ========================================
 const Errors = {
     notFound: (resource) => new ApiError(404, `${resource} not found`),
     badRequest: (message, details) => new ApiError(400, message, details),
@@ -78,19 +121,66 @@ const Errors = {
 
 module.exports = { ApiError, Errors };
 </code></pre>
-    </div>
+        </div>
+    </details>
 
     <h4>2. Centralized Error Handling Middleware</h4>
+    <p class="code-description">
+        <strong>Problem solved:</strong> Catches all errors from routes in one place, ensuring consistent error responses and proper logging without duplicating code.
+    </p>
+
     <div class="code-block">
         <div class="code-header">
-            <span>JavaScript - Error Middleware</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d3-2')">Copy</button>
+            <span>JavaScript - Error Handling Patterns (Simple)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d3-2-simple')">Copy</button>
         </div>
-        <pre><code id="code-d3-2">const express = require('express');
+        <pre><code id="code-d3-2-simple"
+                   class="language-javascript"
+                   data-type="error-handling"
+                   data-description="Basic pattern for throwing errors and using middleware to handle them">// Route with error throwing
+app.get('/api/users/:id', (req, res, next) => {
+    try {
+        const user = users.find(u => u.id === parseInt(req.params.id));
+        if (!user) {
+            throw new ApiError(404, 'User not found');
+        }
+        res.json(user);
+    } catch (error) {
+        next(error); // Pass to centralized error handler
+    }
+});
+
+// Global error handler (place LAST in middleware chain)
+app.use((error, req, res, next) => {
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
+        error: {
+            status: statusCode,
+            message: error.message,
+            path: req.path
+        }
+    });
+});
+</code></pre>
+    </div>
+
+    <details>
+        <summary>📖 View Full Implementation with Validation & Logging</summary>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Complete Error Handling System</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d3-2-full')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d3-2-full"
+                       class="language-javascript"
+                       data-type="error-handling"
+                       data-description="Complete Express error handling with custom errors, validation, and middleware">const express = require('express');
 const app = express();
 app.use(express.json());
 
-// Custom error class
+// ========================================
+// Custom Error Class
+// ========================================
 class ApiError extends Error {
     constructor(statusCode, message, details = null) {
         super(message);
@@ -99,23 +189,33 @@ class ApiError extends Error {
     }
 }
 
-// Sample data
+// ========================================
+// Sample Data
+// ========================================
 let users = [{ id: 1, name: 'Alice', email: 'alice@example.com' }];
 
-// Routes with proper error throwing
+// ========================================
+// Routes - Using throw for Errors
+// ========================================
 app.get('/api/users/:id', (req, res, next) => {
     try {
         const id = parseInt(req.params.id);
+
+        // Validation error - throw immediately
         if (isNaN(id)) {
             throw new ApiError(400, 'Invalid user ID format');
         }
+
         const user = users.find(u => u.id === id);
+
+        // Not found error - throw immediately
         if (!user) {
             throw new ApiError(404, 'User not found');
         }
+
         res.json(user);
     } catch (error) {
-        next(error); // Pass to error handler
+        next(error); // Pass to centralized handler
     }
 });
 
@@ -124,16 +224,20 @@ app.post('/api/users', (req, res, next) => {
         const { name, email } = req.body;
         const errors = [];
 
+        // Collect validation errors
         if (!name || name.trim().length < 2) {
             errors.push({ field: 'name', message: 'Name must be at least 2 characters' });
         }
         if (!email || !email.includes('@')) {
             errors.push({ field: 'email', message: 'Valid email required' });
         }
+
+        // Check for duplicate email (conflict)
         if (users.find(u => u.email === email)) {
             throw new ApiError(409, 'Email already exists');
         }
 
+        // Throw validation errors if any
         if (errors.length > 0) {
             throw new ApiError(422, 'Validation failed', errors);
         }
@@ -142,17 +246,23 @@ app.post('/api/users', (req, res, next) => {
         users.push(newUser);
         res.status(201).json(newUser);
     } catch (error) {
-        next(error);
+        next(error); // Pass to centralized handler
     }
 });
 
-// 404 handler for undefined routes
+// ========================================
+// 404 Handler - Using next() for Flow Control
+// ========================================
 app.use((req, res, next) => {
+    // Route not found - create error and pass to handler
     next(new ApiError(404, `Route ${req.method} ${req.path} not found`));
 });
 
-// Global error handler (MUST be last middleware)
+// ========================================
+// Global Error Handler (MUST be last)
+// ========================================
 app.use((error, req, res, next) => {
+    // Log error for debugging
     console.error(`[${new Date().toISOString()}] Error:`, error.message);
 
     const statusCode = error.statusCode || 500;
@@ -166,7 +276,7 @@ app.use((error, req, res, next) => {
         }
     };
 
-    // Don't expose internal errors in production
+    // Security: Don't expose internal errors in production
     if (statusCode === 500 && process.env.NODE_ENV === 'production') {
         response.error.message = 'Internal server error';
     }
@@ -174,19 +284,38 @@ app.use((error, req, res, next) => {
     res.status(statusCode).json(response);
 });
 
-app.listen(3000, () => console.log('Server running'));
+app.listen(3000, () => console.log('Server running on port 3000'));
 </code></pre>
+        </div>
+    </details>
+
+    <div class="info-box">
+        <h4>🔍 Error Handling Patterns Explained</h4>
+        <h5>throw vs next() vs handler</h5>
+        <ul>
+            <li><strong>throw:</strong> Use inside try-catch blocks to immediately stop execution and jump to catch block</li>
+            <li><strong>next(error):</strong> Passes error to Express error handler middleware - used in catch blocks or async middleware</li>
+            <li><strong>Error handler:</strong> Centralized middleware with 4 parameters (error, req, res, next) that formats and sends error response</li>
+        </ul>
     </div>
 
     <div class="storage-demo">
         <h4>💾 localStorage Practical: Error Log Dashboard</h4>
-        <p>Track and analyze API errors for debugging:</p>
+        <p class="code-description">
+            <strong>Problem solved:</strong> Track and analyze API errors client-side for debugging, providing insights into failure patterns without server logs.
+        </p>
+
         <div class="code-block">
             <div class="code-header">
                 <span>JavaScript - Error Logger</span>
                 <button class="copy-btn" onclick="copyCode(this, 'storage-d3')">Copy</button>
             </div>
-            <pre><code id="storage-d3">// Error Log Dashboard - Track API errors
+            <pre><code id="storage-d3"
+                       class="language-javascript"
+                       data-type="error-handling"
+                       data-description="localStorage-based error logging system with statistics and analysis">// ========================================
+// Error Log Dashboard - Track API errors
+// ========================================
 const ERROR_LOG_KEY = 'day3_error_log';
 const MAX_LOGS = 100;
 
@@ -205,7 +334,9 @@ function logError(statusCode, message, endpoint) {
     localStorage.setItem(ERROR_LOG_KEY, JSON.stringify(logs));
 }
 
-// Get error statistics
+// ========================================
+// Get Error Statistics
+// ========================================
 function getErrorStats() {
     const logs = JSON.parse(localStorage.getItem(ERROR_LOG_KEY)) || [];
     const stats = {
@@ -238,7 +369,9 @@ function clearErrors() {
     console.log('🗑️ Error logs cleared');
 }
 
-// Usage
+// ========================================
+// Usage Example
+// ========================================
 logError(404, 'User not found', '/api/users/999');
 logError(400, 'Invalid email format', '/api/users');
 logError(500, 'Database connection failed', '/api/orders');
@@ -265,10 +398,16 @@ console.table(getRecentErrors(5));
                     <span>JavaScript - Products with Error Handling</span>
                     <button class="copy-btn" onclick="copyCode(this, 'solution-d3')">Copy</button>
                 </div>
-                <pre><code id="solution-d3">const express = require('express');
+                <pre class="line-numbers"><code id="solution-d3"
+                           class="language-javascript"
+                           data-type="error-handling"
+                           data-description="Products API demonstrating all error types: validation, bad request, conflict, and not found">const express = require('express');
 const app = express();
 app.use(express.json());
 
+// ========================================
+// Error Class
+// ========================================
 class ApiError extends Error {
     constructor(statusCode, message, details) {
         super(message);
@@ -277,25 +416,35 @@ class ApiError extends Error {
     }
 }
 
+// ========================================
+// Sample Data
+// ========================================
 let products = [{ id: 1, name: 'Laptop', price: 999 }];
 
+// ========================================
+// Create Product with Full Validation
+// ========================================
 app.post('/api/products', (req, res, next) => {
     try {
         const { name, price } = req.body;
         const errors = [];
 
+        // Check required fields (422 Unprocessable Entity)
         if (!name) errors.push({ field: 'name', message: 'Name is required' });
         if (price === undefined) errors.push({ field: 'price', message: 'Price is required' });
         if (errors.length) throw new ApiError(422, 'Validation failed', errors);
 
+        // Validate price format (400 Bad Request)
         if (typeof price !== 'number' || price <= 0) {
             throw new ApiError(400, 'Price must be a positive number');
         }
 
+        // Check for duplicate product (409 Conflict)
         if (products.find(p => p.name.toLowerCase() === name.toLowerCase())) {
             throw new ApiError(409, 'Product with this name already exists');
         }
 
+        // Create and return product
         const product = { id: products.length + 1, name, price };
         products.push(product);
         res.status(201).json(product);
@@ -304,6 +453,9 @@ app.post('/api/products', (req, res, next) => {
     }
 });
 
+// ========================================
+// Error Handler
+// ========================================
 app.use((err, req, res, next) => {
     res.status(err.statusCode || 500).json({
         error: { status: err.statusCode, message: err.message, details: err.details }

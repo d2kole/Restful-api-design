@@ -85,22 +85,58 @@
     <h3>💻 Code Examples</h3>
 
     <h4>1. Setting Up Express.js</h4>
+    <p>This example shows how to create a minimal Express server with a health check endpoint. Key takeaway: <code>app.use(express.json())</code> middleware is essential for parsing JSON request bodies.</p>
+
+    <!-- Simple version shown first -->
     <div class="code-block">
         <div class="code-header">
-            <span>JavaScript - Initial Express Setup</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d1-1')">Copy</button>
+            <span>JavaScript - Express Setup (Simplified)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d1-1-simple')">Copy</button>
         </div>
-        <pre><code id="code-d1-1">// First, initialize your project and install Express
+        <pre><code id="code-d1-1-simple"
+                  class="language-javascript"
+                  data-type="setup"
+                  data-description="Minimal Express.js server with health check endpoint">const express = require('express');
+const app = express();
+
+app.use(express.json());  // Parse JSON request bodies
+
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));
+</code></pre>
+    </div>
+
+    <!-- Full version with detailed comments -->
+    <details class="code-details">
+        <summary>Show full code with detailed comments</summary>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Initial Express Setup (Full)</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d1-1')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d1-1"
+                      class="language-javascript"
+                      data-type="setup"
+                      data-description="Basic Express.js server initialization with health check endpoint">// First, initialize your project and install Express
 // Run in terminal: npm init -y && npm install express
 
 const express = require('express');
 const app = express();
 const PORT = 3000;
 
-// Middleware to parse JSON request bodies
+// ========================================
+// Middleware Configuration
+// ========================================
+// Parse incoming JSON request bodies automatically
 app.use(express.json());
 
-// Simple health check endpoint
+// ========================================
+// Health Check Endpoint
+// ========================================
+// Simple endpoint to verify server is running
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
@@ -108,36 +144,101 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Start the server
+// ========================================
+// Start Server
+// ========================================
 app.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
 </code></pre>
-    </div>
+        </div>
+    </details>
 
     <h4>2. Complete CRUD Endpoints</h4>
+    <p>This example demonstrates all five HTTP methods working together to create a full CRUD API. Key takeaway: Each method serves a distinct purpose, and proper status codes (201, 204, 404) communicate the operation result clearly.</p>
+
+    <!-- Simple version shown first -->
     <div class="code-block">
         <div class="code-header">
-            <span>JavaScript - Full CRUD Example</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d1-2')">Copy</button>
+            <span>JavaScript - CRUD Endpoints (Simplified)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d1-2-simple')">Copy</button>
         </div>
-        <pre><code id="code-d1-2">const express = require('express');
+        <pre><code id="code-d1-2-simple"
+                  class="language-javascript"
+                  data-type="example"
+                  data-description="Simplified CRUD endpoints showing the core structure of RESTful operations">const express = require('express');
 const app = express();
 app.use(express.json());
 
-// In-memory data store (replace with database in production)
+// In-memory data store
+let users = [
+    { id: 1, name: 'Alice Johnson', email: 'alice@example.com' },
+    { id: 2, name: 'Bob Smith', email: 'bob@example.com' }
+];
+
+// ========================================
+// GET - Retrieve all users
+// ========================================
+app.get('/api/users', (req, res) => {
+    res.json(users);
+});
+
+// ========================================
+// POST - Create new user
+// ========================================
+app.post('/api/users', (req, res) => {
+    const newUser = { id: nextId++, ...req.body };
+    users.push(newUser);
+    res.status(201).json(newUser);  // 201 = Created
+});
+
+// ========================================
+// DELETE - Remove user
+// ========================================
+app.delete('/api/users/:id', (req, res) => {
+    users = users.filter(u => u.id !== parseInt(req.params.id));
+    res.status(204).send();  // 204 = No Content
+});
+
+app.listen(3000);
+</code></pre>
+    </div>
+
+    <!-- Full version in collapsible details -->
+    <details class="code-details">
+        <summary>Show full code with all CRUD operations</summary>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Complete CRUD Example</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d1-2')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d1-2"
+                      class="language-javascript"
+                      data-type="example"
+                      data-description="Full CRUD implementation with error handling and all HTTP methods">const express = require('express');
+const app = express();
+app.use(express.json());
+
+// ========================================
+// In-Memory Data Store
+// ========================================
+// Replace with database in production
 let users = [
     { id: 1, name: 'Alice Johnson', email: 'alice@example.com' },
     { id: 2, name: 'Bob Smith', email: 'bob@example.com' }
 ];
 let nextId = 3;
 
-// GET all users
+// ========================================
+// GET All Users
+// ========================================
 app.get('/api/users', (req, res) => {
     res.json(users);
 });
 
-// GET single user by ID
+// ========================================
+// GET Single User by ID
+// ========================================
 app.get('/api/users/:id', (req, res) => {
     const user = users.find(u => u.id === parseInt(req.params.id));
     if (!user) {
@@ -146,68 +247,148 @@ app.get('/api/users/:id', (req, res) => {
     res.json(user);
 });
 
-// POST create new user
+// ========================================
+// POST Create New User
+// ========================================
 app.post('/api/users', (req, res) => {
     const { name, email } = req.body;
+
+    // Validate required fields
     if (!name || !email) {
         return res.status(400).json({ error: 'Name and email are required' });
     }
+
     const newUser = { id: nextId++, name, email };
     users.push(newUser);
-    res.status(201).json(newUser);
+    res.status(201).json(newUser);  // 201 indicates successful creation
 });
 
-// PUT replace user entirely
+// ========================================
+// PUT Replace Entire User
+// ========================================
 app.put('/api/users/:id', (req, res) => {
     const index = users.findIndex(u => u.id === parseInt(req.params.id));
     if (index === -1) {
         return res.status(404).json({ error: 'User not found' });
     }
+
     const { name, email } = req.body;
+    // Completely replace the user object
     users[index] = { id: parseInt(req.params.id), name, email };
     res.json(users[index]);
 });
 
-// PATCH partial update
+// ========================================
+// PATCH Partial Update
+// ========================================
 app.patch('/api/users/:id', (req, res) => {
     const user = users.find(u => u.id === parseInt(req.params.id));
     if (!user) {
         return res.status(404).json({ error: 'User not found' });
     }
+
+    // Merge new properties into existing user
     Object.assign(user, req.body);
     res.json(user);
 });
 
-// DELETE user
+// ========================================
+// DELETE User
+// ========================================
 app.delete('/api/users/:id', (req, res) => {
     const index = users.findIndex(u => u.id === parseInt(req.params.id));
     if (index === -1) {
         return res.status(404).json({ error: 'User not found' });
     }
+
     users.splice(index, 1);
-    res.status(204).send();
+    res.status(204).send();  // 204 = No Content (successful deletion)
 });
 
+// ========================================
+// Start Server
+// ========================================
 app.listen(3000, () => console.log('Server running on port 3000'));
+</code></pre>
+        </div>
+    </details>
+
+    <h4>3. Building an Actual API with Node.js HTTP Module</h4>
+    <p>Understanding Node.js core <code>http</code> module helps you appreciate what frameworks like Express abstract away. This example builds a complete server with routing, template rendering, and an API endpoint from scratch.</p>
+
+    <!-- Simple version shown first -->
+    <div class="code-block">
+        <div class="code-header">
+            <span>JavaScript - Basic Node.js HTTP Server</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d1-3-simple')">Copy</button>
+        </div>
+        <pre><code id="code-d1-3-simple"
+                  class="language-javascript"
+                  data-type="example"
+                  data-description="Minimal Node.js HTTP server showing core routing concepts">const http = require('http');
+const url = require('url');
+
+// ========================================
+// Sample Data
+// ========================================
+const products = [
+    { id: 1, name: 'Laptop', price: 999 },
+    { id: 2, name: 'Mouse', price: 29 }
+];
+
+// ========================================
+// Create Server with Routing
+// ========================================
+const server = http.createServer((req, res) => {
+    const { pathname } = url.parse(req.url, true);
+
+    // Route: API endpoint
+    if (pathname === '/api') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(products));
+    }
+    // Route: Home page
+    else if (pathname === '/') {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end('<h1>Product API</h1>');
+    }
+    // Route: 404 Not Found
+    else {
+        res.writeHead(404, { 'Content-Type': 'text/html' });
+        res.end('<h1>Page not found</h1>');
+    }
+});
+
+// ========================================
+// Start Server
+// ========================================
+server.listen(8000, '127.0.0.1', () => {
+    console.log('Server running at http://127.0.0.1:8000/');
+});
 </code></pre>
     </div>
 
-    <h4>3. Building an Actual API with Node.js HTTP Module</h4>
-    <p>Before using frameworks like Express, it's valuable to understand how Node.js creates HTTP servers using the core <code>http</code> module. This example demonstrates building a complete API from scratch with template rendering and routing.</p>
+    <!-- Full version split into logical blocks -->
+    <details class="code-details">
+        <summary>Show full implementation with template rendering</summary>
 
-    <div class="code-block">
-        <div class="code-header">
-            <span>JavaScript - Complete Node.js HTTP Server</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d1-3')">Copy</button>
-        </div>
-        <pre><code id="code-d1-3">const fs = require('fs');
+        <h5>Step 1: Startup & File Reading</h5>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Initial Setup & Data Loading</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d1-3-startup')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d1-3-startup"
+                      class="language-javascript"
+                      data-type="implementation"
+                      data-description="Server startup: reading templates and data files synchronously">const fs = require('fs');
 const http = require('http');
 const url = require('url');
 const slugify = require('slugify');
 
-// ============================================
-// 1. FILE READING (Synchronous - runs once at startup)
-// ============================================
+// ========================================
+// FILE READING (Synchronous - runs once at startup)
+// ========================================
 // Read HTML templates - these are placeholders that will be filled with data
 const tempOverview = fs.readFileSync(`${__dirname}/templates/template-overview.html`, 'utf-8');
 const tempCard = fs.readFileSync(`${__dirname}/templates/template-card.html`, 'utf-8');
@@ -220,10 +401,21 @@ const dataObj = JSON.parse(data);  // Parse JSON string into JavaScript object
 // Create URL slugs for SEO-friendly URLs (e.g., "Fresh Avocados" → "fresh-avocados")
 const slugs = dataObj.map(el => slugify(el.productName, { lower: true }));
 console.log(slugs);
+</code></pre>
+        </div>
 
-// ============================================
-// 2. TEMPLATE REPLACEMENT HELPER FUNCTION
-// ============================================
+        <h5>Step 2: Template Helper Function</h5>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Template Replacement Logic</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d1-3-helpers')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d1-3-helpers"
+                      class="language-javascript"
+                      data-type="implementation"
+                      data-description="Helper function to replace template placeholders with actual data">// ========================================
+// TEMPLATE REPLACEMENT HELPER FUNCTION
+// ========================================
 const replaceTemplate = (temp, product) => {
     // Use regex with /g flag to replace ALL occurrences, not just the first
     let output = temp.replace(/{%PRODUCTNAME%}/g, product.productName);
@@ -239,17 +431,28 @@ const replaceTemplate = (temp, product) => {
     if (!product.organic) output = output.replace(/{%NOT_ORGANIC%}/g, 'not-organic');
     return output;
 };
+</code></pre>
+        </div>
 
-// ============================================
-// 3. HTTP SERVER CREATION
-// ============================================
+        <h5>Step 3: Server & Routing Logic</h5>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - HTTP Server with Routes</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d1-3-routes')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d1-3-routes"
+                      class="language-javascript"
+                      data-type="implementation"
+                      data-description="HTTP server creation with routing logic for different endpoints">// ========================================
+// HTTP SERVER CREATION
+// ========================================
 const server = http.createServer((req, res) => {
     // Parse the request URL to extract pathname and query parameters
     const { query, pathname } = url.parse(req.url, true);  // true = parse query string
 
-    // ============================================
-    // 4. ROUTING LOGIC
-    // ============================================
+    // ========================================
+    // ROUTING LOGIC
+    // ========================================
 
     // Route: Overview/Home Page
     if (pathname === '/' || pathname === '/overview') {
@@ -289,13 +492,28 @@ const server = http.createServer((req, res) => {
         res.end('&lt;h1&gt;Page not found!&lt;/h1&gt;');
     }
 });
+</code></pre>
+        </div>
 
-// Start server on port 8000
+        <h5>Step 4: Start Server</h5>
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Server Startup</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d1-3-start')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d1-3-start"
+                      class="language-javascript"
+                      data-type="implementation"
+                      data-description="Starting the HTTP server on specified port and host">// ========================================
+// START SERVER
+// ========================================
+// Listen on port 8000, accessible only from localhost
 server.listen(8000, '127.0.0.1', () => {
     console.log('Listening to requests on port 8000');
 });
 </code></pre>
-    </div>
+        </div>
+    </details>
 
     <div class="info-box">
         <h4>📖 Code Explanation: Grammar & Syntax Breakdown</h4>
@@ -372,61 +590,113 @@ server.listen(8000, '127.0.0.1', () => {
 
     <div class="storage-demo">
         <h4>💾 localStorage Practical: API Request Logger</h4>
-        <p>Track your API learning progress by logging requests you've tested:</p>
+        <p>Track your API learning progress by logging requests you've tested. This demonstrates localStorage for persisting client-side data across browser sessions using JSON serialization.</p>
+
+        <!-- Simple version shown first -->
         <div class="code-block">
             <div class="code-header">
-                <span>JavaScript - localStorage API Logger</span>
-                <button class="copy-btn" onclick="copyCode(this, 'storage-d1')">Copy</button>
+                <span>JavaScript - localStorage Logger (Simplified)</span>
+                <button class="copy-btn" onclick="copyCode(this, 'storage-d1-simple')">Copy</button>
             </div>
-            <pre><code id="storage-d1">// API Request Logger - Save your practice session
-const API_LOG_KEY = 'day1_api_requests_log';
+            <pre><code id="storage-d1-simple"
+                      class="language-javascript"
+                      data-type="practical"
+                      data-description="Minimal localStorage API logger with log and view functions">const API_LOG_KEY = 'day1_api_requests_log';
 
-// Log a new API request you've tested
 function logRequest(method, endpoint, statusCode) {
     const logs = JSON.parse(localStorage.getItem(API_LOG_KEY)) || [];
+    logs.push({ method, endpoint, statusCode, timestamp: new Date().toISOString() });
+    localStorage.setItem(API_LOG_KEY, JSON.stringify(logs));
+}
+
+function viewLogs() {
+    return JSON.parse(localStorage.getItem(API_LOG_KEY)) || [];
+}
+
+// Usage
+logRequest('GET', '/api/users', 200);
+console.table(viewLogs());
+</code></pre>
+        </div>
+
+        <!-- Full version with all functions -->
+        <details class="code-details">
+            <summary>Show full code with statistics and clear functions</summary>
+            <div class="code-block">
+                <div class="code-header">
+                    <span>JavaScript - localStorage API Logger (Full)</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'storage-d1')">Copy</button>
+                </div>
+                <pre class="line-numbers"><code id="storage-d1"
+                          class="language-javascript"
+                          data-type="practical"
+                          data-description="API request logger using localStorage for tracking testing progress">// API Request Logger - Save your practice session
+const API_LOG_KEY = 'day1_api_requests_log';
+
+// ========================================
+// Log a New API Request
+// ========================================
+function logRequest(method, endpoint, statusCode) {
+    // Retrieve existing logs or initialize empty array
+    const logs = JSON.parse(localStorage.getItem(API_LOG_KEY)) || [];
+
     logs.push({
         method,
         endpoint,
         statusCode,
         timestamp: new Date().toISOString()
     });
+
+    // Save back to localStorage as JSON string
     localStorage.setItem(API_LOG_KEY, JSON.stringify(logs));
     console.log(`✅ Logged: ${method} ${endpoint} → ${statusCode}`);
 }
 
-// View all logged requests
+// ========================================
+// View All Logged Requests
+// ========================================
 function viewLogs() {
     const logs = JSON.parse(localStorage.getItem(API_LOG_KEY)) || [];
-    console.table(logs);
+    console.table(logs);  // Displays nicely formatted table in console
     return logs;
 }
 
-// Get summary stats
+// ========================================
+// Get Summary Statistics
+// ========================================
 function getStats() {
     const logs = JSON.parse(localStorage.getItem(API_LOG_KEY)) || [];
     const stats = {
         total: logs.length,
         byMethod: {}
     };
+
+    // Count requests by HTTP method
     logs.forEach(log => {
         stats.byMethod[log.method] = (stats.byMethod[log.method] || 0) + 1;
     });
+
     return stats;
 }
 
-// Clear all logs
+// ========================================
+// Clear All Logs
+// ========================================
 function clearLogs() {
     localStorage.removeItem(API_LOG_KEY);
     console.log('🗑️ Logs cleared');
 }
 
-// Usage examples:
+// ========================================
+// Usage Examples
+// ========================================
 logRequest('GET', '/api/users', 200);
 logRequest('POST', '/api/users', 201);
 logRequest('DELETE', '/api/users/1', 204);
 console.log('Stats:', getStats());
 </code></pre>
-        </div>
+            </div>
+        </details>
     </div>
 
     <div class="exercise">
@@ -453,46 +723,67 @@ console.log('Stats:', getStats());
                     <span>JavaScript - Products API Solution</span>
                     <button class="copy-btn" onclick="copyCode(this, 'solution-d1')">Copy</button>
                 </div>
-                <pre><code id="solution-d1">const express = require('express');
+                <pre><code id="solution-d1"
+                          class="language-javascript"
+                          data-type="exercise-solution"
+                          data-description="Complete products API solution with validation and error handling">const express = require('express');
 const app = express();
 app.use(express.json());
 
+// ========================================
+// In-Memory Data Store
+// ========================================
 let products = [
     { id: 1, name: 'Laptop', price: 999.99, category: 'Electronics' },
     { id: 2, name: 'Coffee Mug', price: 12.99, category: 'Kitchen' }
 ];
 let nextId = 3;
 
-// GET all products
+// ========================================
+// GET All Products
+// ========================================
 app.get('/api/products', (req, res) => {
     res.json(products);
 });
 
-// GET single product
+// ========================================
+// GET Single Product by ID
+// ========================================
 app.get('/api/products/:id', (req, res) => {
     const product = products.find(p => p.id === parseInt(req.params.id));
+
     if (!product) {
         return res.status(404).json({ error: 'Product not found' });
     }
+
     res.json(product);
 });
 
-// POST create product
+// ========================================
+// POST Create New Product
+// ========================================
 app.post('/api/products', (req, res) => {
     const { name, price, category } = req.body;
+
+    // Validate required fields
     if (!name || !price) {
         return res.status(400).json({ error: 'Name and price required' });
     }
+
     const newProduct = {
         id: nextId++,
         name,
-        price: parseFloat(price),
-        category: category || 'Uncategorized'
+        price: parseFloat(price),  // Ensure price is a number
+        category: category || 'Uncategorized'  // Default category if not provided
     };
+
     products.push(newProduct);
-    res.status(201).json(newProduct);
+    res.status(201).json(newProduct);  // 201 = Created
 });
 
+// ========================================
+// Start Server
+// ========================================
 app.listen(3000, () => console.log('Products API running'));
 </code></pre>
             </div>

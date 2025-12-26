@@ -36,31 +36,97 @@
     <h3>💻 Code Examples</h3>
 
     <h4>1. Redis Caching Implementation</h4>
+    <p><strong>Description:</strong> Implement server-side caching using Redis to store frequently accessed data in memory, reducing database load and improving response times. This example includes cache middleware, automatic expiration, and manual invalidation strategies.</p>
+
+    <!-- SIMPLIFIED VERSION -->
     <div class="code-block">
         <div class="code-header">
-            <span>JavaScript - Redis Cache (npm install redis)</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d6-1')">Copy</button>
+            <span>JavaScript - Redis Cache Middleware (Simplified)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d6-1-simple')">Copy</button>
         </div>
-        <pre><code id="code-d6-1">const express = require('express');
+        <pre><code id="code-d6-1-simple"
+                  class="language-javascript"
+                  data-type="performance"
+                  data-description="Essential Redis caching pattern with cache middleware and invalidation">const express = require('express');
 const redis = require('redis');
 const app = express();
 
-// Create Redis client
+// ======================================== REDIS CLIENT SETUP
+const redisClient = redis.createClient({
+    host: 'localhost',
+    port: 6379
+});
+redisClient.connect();
+
+// ======================================== CACHE MIDDLEWARE
+const cacheMiddleware = (duration) => {
+    return async (req, res, next) => {
+        const key = `cache:${req.originalUrl}`;
+
+        // Check if data exists in cache
+        const cachedData = await redisClient.get(key);
+        if (cachedData) {
+            return res.json({ cached: true, data: JSON.parse(cachedData) });
+        }
+
+        // Store response in cache when sent
+        const originalJson = res.json.bind(res);
+        res.json = (data) => {
+            redisClient.setEx(key, duration, JSON.stringify(data));
+            originalJson(data);
+        };
+        next();
+    };
+};
+
+// ======================================== CACHED ROUTE
+app.get('/api/users', cacheMiddleware(60), async (req, res) => {
+    const data = await getExpensiveData(); // Expensive operation
+    res.json(data);
+});
+
+// ======================================== CACHE INVALIDATION
+app.post('/api/users', async (req, res) => {
+    await redisClient.del('cache:/api/users'); // Clear cache on mutation
+    res.status(201).json({ message: 'User created' });
+});
+</code></pre>
+    </div>
+
+    <details>
+        <summary>📄 View Full Redis Implementation (with error handling, clear all, and monitoring)</summary>
+
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Complete Redis Caching System</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d6-1')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d6-1"
+                  class="language-javascript"
+                  data-type="performance"
+                  data-description="Production-ready Redis caching with error handling, monitoring, and bulk invalidation">const express = require('express');
+const redis = require('redis');
+const app = express();
+
+// ======================================== REDIS CLIENT SETUP
+// Create Redis client with connection configuration
 const redisClient = redis.createClient({
     host: 'localhost',
     port: 6379
 });
 
+// Handle Redis connection errors gracefully
 redisClient.on('error', (err) => console.error('Redis error:', err));
 redisClient.connect();
 
-// Cache middleware
+// ======================================== CACHE MIDDLEWARE
+// Reusable middleware for caching GET requests
 const cacheMiddleware = (duration) => {
     return async (req, res, next) => {
         const key = `cache:${req.originalUrl}`;
 
         try {
-            // Check cache
+            // Attempt to retrieve cached data
             const cachedData = await redisClient.get(key);
 
             if (cachedData) {
@@ -71,11 +137,11 @@ const cacheMiddleware = (duration) => {
                 });
             }
 
-            // Cache miss - store original res.json
+            // Cache miss - intercept res.json to store response
             const originalJson = res.json.bind(res);
 
             res.json = (data) => {
-                // Store in cache
+                // Store in cache with automatic expiration (setEx)
                 redisClient.setEx(key, duration, JSON.stringify(data))
                     .catch(err => console.error('Cache error:', err));
 
@@ -85,15 +151,15 @@ const cacheMiddleware = (duration) => {
             next();
         } catch (error) {
             console.error('Cache middleware error:', error);
-            next();
+            next(); // Continue without caching on error
         }
     };
 };
 
-// Sample expensive operation
+// ======================================== EXPENSIVE OPERATION SIMULATION
+// Simulates slow database query or external API call
 const getExpensiveData = async () => {
-    // Simulate database query or API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000)); // 2-second delay
     return {
         users: [
             { id: 1, name: 'Alice', email: 'alice@example.com' },
@@ -103,60 +169,126 @@ const getExpensiveData = async () => {
     };
 };
 
-// Route with 60-second cache
+// ======================================== CACHED ROUTES
+// GET route with 60-second cache duration
 app.get('/api/users', cacheMiddleware(60), async (req, res) => {
     console.log('🔍 Fetching data from source...');
     const data = await getExpensiveData();
     res.json(data);
 });
 
-// Manual cache invalidation
+// ======================================== CACHE INVALIDATION
+// POST route that invalidates specific cache entry
 app.post('/api/users', async (req, res) => {
     // Create user logic here...
 
-    // Invalidate cache
+    // Remove cached data for /api/users after mutation
     await redisClient.del('cache:/api/users');
     console.log('🗑️ Cache invalidated');
 
     res.status(201).json({ message: 'User created' });
 });
 
-// Clear all cache
+// ======================================== BULK CACHE CLEARING
+// Clear all cache entries matching pattern
 app.post('/api/cache/clear', async (req, res) => {
-    const keys = await redisClient.keys('cache:*');
+    const keys = await redisClient.keys('cache:*'); // Find all cache keys
     if (keys.length > 0) {
-        await redisClient.del(keys);
+        await redisClient.del(keys); // Delete in bulk
     }
     res.json({ message: `Cleared ${keys.length} cache entries` });
 });
 
-app.listen(3000, () => console.log('Cached API running'));
+app.listen(3000, () => console.log('Cached API running on port 3000'));
 </code></pre>
-    </div>
+            </div>
+        </details>
 
     <h4>2. Rate Limiting with express-rate-limit</h4>
+    <p><strong>Description:</strong> Protect your API from abuse by limiting the number of requests per IP address or user. This implementation shows multiple rate limiting strategies including general limits, strict authentication limits, tiered limits based on user subscription levels, and Redis-backed distributed rate limiting.</p>
+
+    <!-- SIMPLIFIED VERSION -->
     <div class="code-block">
         <div class="code-header">
-            <span>JavaScript - Rate Limiting (npm install express-rate-limit)</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d6-2')">Copy</button>
+            <span>JavaScript - Rate Limiting Basics (Simplified)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d6-2-simple')">Copy</button>
         </div>
-        <pre><code id="code-d6-2">const express = require('express');
+        <pre><code id="code-d6-2-simple"
+                  class="language-javascript"
+                  data-type="performance"
+                  data-description="Essential rate limiting with general and auth-specific limits">const express = require('express');
 const rateLimit = require('express-rate-limit');
 const app = express();
 app.use(express.json());
 
-// General rate limiter - 100 requests per 15 minutes
+// ======================================== GENERAL RATE LIMITER
+// 100 requests per 15 minutes for all routes
 const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    max: 100, // Limit each IP to 100 requests
+    message: {
+        error: 'Too many requests',
+        message: 'You have exceeded the 100 requests in 15 minutes limit!'
+    },
+    standardHeaders: true, // Return rate limit info in RateLimit-* headers
+    legacyHeaders: false
+});
+
+// ======================================== STRICT AUTH LIMITER
+// 5 attempts per 15 minutes for login endpoints
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    skipSuccessfulRequests: true, // Only count failed attempts
+    message: {
+        error: 'Too many login attempts',
+        message: 'Account temporarily locked. Try again in 15 minutes.'
+    }
+});
+
+// ======================================== APPLY LIMITERS
+// Apply general limiter to all API routes
+app.use('/api/', generalLimiter);
+
+// Apply strict limiter to authentication
+app.post('/api/auth/login', authLimiter, (req, res) => {
+    res.json({ message: 'Login successful' });
+});
+
+app.listen(3000, () => console.log('Rate-limited API running'));
+</code></pre>
+    </div>
+
+    <details>
+        <summary>📄 View Full Rate Limiting Implementation (with Redis, tiered limits, and monitoring)</summary>
+
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Advanced Rate Limiting Strategies</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d6-2')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d6-2"
+                  class="language-javascript"
+                  data-type="performance"
+                  data-description="Production-grade rate limiting with Redis store, tiered limits, and custom handlers">const express = require('express');
+const rateLimit = require('express-rate-limit');
+const app = express();
+app.use(express.json());
+
+// ======================================== GENERAL RATE LIMITER
+// 100 requests per 15 minutes for standard API access
+const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per window
     message: {
         error: 'Too many requests',
         message: 'You have exceeded the 100 requests in 15 minutes limit!',
         retryAfter: '15 minutes'
     },
-    standardHeaders: true, // Return rate limit info in headers
-    legacyHeaders: false,
+    standardHeaders: true, // Return rate limit info in RateLimit-* headers
+    legacyHeaders: false, // Disable X-RateLimit-* headers
     handler: (req, res) => {
+        // Custom error response when limit exceeded
         res.status(429).json({
             error: 'Too Many Requests',
             message: 'Rate limit exceeded. Please try again later.',
@@ -165,18 +297,20 @@ const generalLimiter = rateLimit({
     }
 });
 
-// Strict limiter for auth endpoints - 5 attempts per 15 minutes
+// ======================================== STRICT AUTH LIMITER
+// 5 attempts per 15 minutes for authentication endpoints
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
-    skipSuccessfulRequests: true, // Don't count successful requests
+    skipSuccessfulRequests: true, // Only count failed login attempts
     message: {
         error: 'Too many login attempts',
         message: 'Account temporarily locked. Try again in 15 minutes.'
     }
 });
 
-// Custom rate limiter with Redis store
+// ======================================== REDIS-BACKED RATE LIMITER
+// Distributed rate limiting using Redis (for multi-server deployments)
 const RedisStore = require('rate-limit-redis');
 const redis = require('redis');
 const redisClient = redis.createClient();
@@ -184,31 +318,36 @@ const redisClient = redis.createClient();
 const redisLimiter = rateLimit({
     store: new RedisStore({
         client: redisClient,
-        prefix: 'rate_limit:'
+        prefix: 'rate_limit:' // Namespace for rate limit keys
     }),
     windowMs: 60 * 1000, // 1 minute
     max: 20 // 20 requests per minute per IP
 });
 
-// Apply general limiter to all routes
+// ======================================== APPLY GLOBAL LIMITER
+// Apply general limiter to all API routes
 app.use('/api/', generalLimiter);
 
-// Stricter limit for authentication
+// ======================================== AUTHENTICATION ROUTE
+// Stricter limit for login to prevent brute force attacks
 app.post('/api/auth/login', authLimiter, (req, res) => {
     // Login logic here
     res.json({ message: 'Login successful' });
 });
 
-// Different limits for different user tiers
+// ======================================== TIERED RATE LIMITING
+// Different limits based on user subscription tier
 const createTieredLimiter = (req, res, next) => {
-    const userTier = req.user?.tier || 'free';
+    const userTier = req.user?.tier || 'free'; // Default to free tier
 
+    // Define limits per tier
     const limits = {
-        free: { windowMs: 60 * 60 * 1000, max: 100 },    // 100/hour
-        premium: { windowMs: 60 * 60 * 1000, max: 1000 }, // 1000/hour
-        enterprise: { windowMs: 60 * 60 * 1000, max: 10000 } // 10000/hour
+        free: { windowMs: 60 * 60 * 1000, max: 100 },    // 100 requests/hour
+        premium: { windowMs: 60 * 60 * 1000, max: 1000 }, // 1000 requests/hour
+        enterprise: { windowMs: 60 * 60 * 1000, max: 10000 } // 10000 requests/hour
     };
 
+    // Create and apply limiter based on user tier
     const limiter = rateLimit(limits[userTier]);
     limiter(req, res, next);
 };
@@ -217,7 +356,8 @@ app.get('/api/data', createTieredLimiter, (req, res) => {
     res.json({ data: 'Your data here' });
 });
 
-// Rate limit status endpoint
+// ======================================== RATE LIMIT STATUS ENDPOINT
+// Check current rate limit status for debugging/monitoring
 app.get('/api/rate-limit/status', (req, res) => {
     res.json({
         limit: req.rateLimit.limit,
@@ -226,21 +366,29 @@ app.get('/api/rate-limit/status', (req, res) => {
     });
 });
 
-app.listen(3000, () => console.log('Rate-limited API running'));
+app.listen(3000, () => console.log('Rate-limited API running on port 3000'));
 </code></pre>
-    </div>
+            </div>
+        </details>
 
     <h4>3. HTTP Cache Headers & ETags</h4>
+    <p><strong>Description:</strong> Use HTTP caching mechanisms to reduce bandwidth and improve performance. ETags enable conditional requests, while Cache-Control headers define caching behavior. This example demonstrates ETag generation, conditional GET requests, Last-Modified headers, and appropriate cache directives for different content types.</p>
+
+    <!-- SIMPLIFIED VERSION -->
     <div class="code-block">
         <div class="code-header">
-            <span>JavaScript - HTTP Caching</span>
-            <button class="copy-btn" onclick="copyCode(this, 'code-d6-3')">Copy</button>
+            <span>JavaScript - HTTP Caching Essentials (Simplified)</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d6-3-simple')">Copy</button>
         </div>
-        <pre><code id="code-d6-3">const express = require('express');
+        <pre><code id="code-d6-3-simple"
+                  class="language-javascript"
+                  data-type="performance"
+                  data-description="Essential HTTP caching with ETags and Cache-Control headers">const express = require('express');
 const crypto = require('crypto');
 const app = express();
 
-// Generate ETag from content
+// ======================================== ETAG GENERATION
+// Generate unique hash from content
 const generateETag = (content) => {
     return crypto
         .createHash('md5')
@@ -248,25 +396,88 @@ const generateETag = (content) => {
         .digest('hex');
 };
 
-// ETag middleware
+// ======================================== STATIC CONTENT WITH CACHE-CONTROL
+// Public content cached for 1 hour
+app.get('/api/static/config', (req, res) => {
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.json({
+        apiVersion: '2.0',
+        features: ['auth', 'caching', 'rate-limiting']
+    });
+});
+
+// ======================================== CONDITIONAL GET WITH ETAG
+// Check ETag before sending full response
+app.get('/api/data', (req, res) => {
+    const data = { users: [], timestamp: Date.now() };
+    const etag = generateETag(data);
+
+    res.set('ETag', etag);
+    res.set('Cache-Control', 'max-age=60');
+
+    // Return 304 if content unchanged
+    if (req.headers['if-none-match'] === etag) {
+        return res.status(304).end();
+    }
+
+    res.json(data);
+});
+
+// ======================================== SENSITIVE DATA - NO CACHE
+// Never cache authentication or session data
+app.get('/api/auth/session', (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.json({ sessionId: 'abc123', expiresAt: new Date() });
+});
+
+app.listen(3000, () => console.log('HTTP cached API running'));
+</code></pre>
+    </div>
+
+    <details>
+        <summary>📄 View Full HTTP Caching Implementation (with ETag middleware and Last-Modified)</summary>
+
+        <div class="code-block">
+            <div class="code-header">
+                <span>JavaScript - Complete HTTP Caching Strategy</span>
+                <button class="copy-btn" onclick="copyCode(this, 'code-d6-3')">Copy</button>
+            </div>
+            <pre class="line-numbers"><code id="code-d6-3"
+                  class="language-javascript"
+                  data-type="performance"
+                  data-description="Production-ready HTTP caching with ETag middleware, Last-Modified, and comprehensive Cache-Control strategies">const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+// ======================================== ETAG GENERATION
+// Generate MD5 hash from content for cache validation
+const generateETag = (content) => {
+    return crypto
+        .createHash('md5')
+        .update(JSON.stringify(content))
+        .digest('hex');
+};
+
+// ======================================== ETAG MIDDLEWARE
+// Automatically add ETag support to all JSON responses
 const etagMiddleware = (req, res, next) => {
     const originalJson = res.json.bind(res);
 
     res.json = (data) => {
         const etag = generateETag(data);
 
-        // Set ETag header
+        // Set ETag header for cache validation
         res.set('ETag', etag);
 
-        // Check if client has cached version
+        // Check if client's cached version is still valid
         const clientEtag = req.headers['if-none-match'];
 
         if (clientEtag === etag) {
-            // Content hasn't changed
+            // Content hasn't changed - return 304 Not Modified
             return res.status(304).end();
         }
 
-        // Send new content
+        // Content changed - send new data
         originalJson(data);
     };
 
@@ -275,9 +486,12 @@ const etagMiddleware = (req, res, next) => {
 
 app.use(etagMiddleware);
 
-// Cache-Control headers for different content types
+// ======================================== STATIC/PUBLIC CONTENT CACHING
+// Cache static configuration for 1 hour, allow stale content
 app.get('/api/static/config', (req, res) => {
-    // Cache for 1 hour, can be stale
+    // public: can be cached by CDNs and proxies
+    // max-age: cache for 3600 seconds (1 hour)
+    // stale-while-revalidate: can serve stale for 24 hours while revalidating
     res.set('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
 
     res.json({
@@ -286,8 +500,12 @@ app.get('/api/static/config', (req, res) => {
     });
 });
 
+// ======================================== USER-SPECIFIC CONTENT CACHING
+// Private cache with Last-Modified header
 app.get('/api/users/:id', (req, res) => {
-    // Private cache, must revalidate
+    // private: only user's browser can cache
+    // max-age: cache for 300 seconds (5 minutes)
+    // must-revalidate: must check with server when stale
     res.set('Cache-Control', 'private, max-age=300, must-revalidate');
 
     const user = {
@@ -297,15 +515,16 @@ app.get('/api/users/:id', (req, res) => {
         lastModified: '2024-01-15T10:00:00Z'
     };
 
-    // Also set Last-Modified header
+    // Set Last-Modified header for time-based cache validation
     res.set('Last-Modified', new Date(user.lastModified).toUTCString());
 
-    // Check If-Modified-Since header
+    // Check If-Modified-Since header from client
     const ifModifiedSince = req.headers['if-modified-since'];
     if (ifModifiedSince) {
         const modifiedTime = new Date(user.lastModified).getTime();
         const requestTime = new Date(ifModifiedSince).getTime();
 
+        // Return 304 if resource not modified since request time
         if (modifiedTime <= requestTime) {
             return res.status(304).end();
         }
@@ -314,51 +533,172 @@ app.get('/api/users/:id', (req, res) => {
     res.json(user);
 });
 
-// Never cache sensitive data
+// ======================================== SENSITIVE DATA - NO CACHING
+// Never cache authentication, session, or personal data
 app.get('/api/auth/session', (req, res) => {
+    // no-store: don't cache at all
+    // no-cache: always revalidate with server
+    // must-revalidate: strict revalidation when stale
+    // private: only user's browser, not CDNs
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
+    res.set('Pragma', 'no-cache'); // HTTP/1.0 compatibility
+    res.set('Expires', '0'); // Legacy header
 
     res.json({ sessionId: 'abc123', expiresAt: new Date() });
 });
 
-// Conditional GET with ETag
+// ======================================== CONDITIONAL GET WITH ETAG
+// Manual ETag validation for specific endpoint
 app.get('/api/data', (req, res) => {
     const data = { users: [], timestamp: Date.now() };
     const etag = generateETag(data);
 
     res.set('ETag', etag);
-    res.set('Cache-Control', 'max-age=60');
+    res.set('Cache-Control', 'max-age=60'); // Cache for 1 minute
 
+    // Check If-None-Match header from client
     if (req.headers['if-none-match'] === etag) {
-        return res.status(304).end();
+        return res.status(304).end(); // Not modified
     }
 
     res.json(data);
 });
 
-app.listen(3000, () => console.log('HTTP cached API running'));
+app.listen(3000, () => console.log('HTTP cached API running on port 3000'));
 </code></pre>
-    </div>
+            </div>
+        </details>
 
     <div class="storage-demo">
         <h4>💾 localStorage Practical: Client-Side Performance Tracking</h4>
-        <p>Monitor API performance and cache efficiency on the client:</p>
+        <p><strong>Description:</strong> Track API performance metrics on the client side using localStorage. Monitor response times, cache hit rates, and identify slow endpoints. This performance monitor wraps fetch calls to automatically record metrics and provides statistical analysis.</p>
+
+        <!-- SIMPLIFIED VERSION -->
         <div class="code-block">
             <div class="code-header">
-                <span>JavaScript - Performance Monitor</span>
-                <button class="copy-btn" onclick="copyCode(this, 'storage-d6')">Copy</button>
+                <span>JavaScript - Performance Monitor (Simplified)</span>
+                <button class="copy-btn" onclick="copyCode(this, 'storage-d6-simple')">Copy</button>
             </div>
-            <pre><code id="storage-d6">// Performance Tracker - Monitor API response times
+            <pre><code id="storage-d6-simple"
+                  class="language-javascript"
+                  data-type="performance"
+                  data-description="Essential performance tracking with localStorage persistence">// ======================================== PERFORMANCE MONITOR CLASS
+// Track API response times and cache efficiency
+const PERF_KEY = 'day6_performance_metrics';
+
+class PerformanceMonitor {
+    constructor() {
+        // Load existing metrics from localStorage
+        const data = localStorage.getItem(PERF_KEY);
+        this.metrics = data ? JSON.parse(data) : {
+            requests: [],
+            cacheHits: 0,
+            cacheMisses: 0
+        };
+    }
+
+    // ======================================== TRACKED FETCH
+    // Wrap fetch to measure performance
+    async trackedFetch(url, options = {}) {
+        const startTime = performance.now();
+
+        try {
+            const response = await fetch(url, options);
+            const duration = performance.now() - startTime;
+
+            // Check if response was cached (304 or X-Cache header)
+            const wasCached = response.headers.get('X-Cache') === 'HIT' ||
+                            response.status === 304;
+
+            // Record metrics
+            this.metrics.requests.push({
+                url,
+                status: response.status,
+                duration,
+                cached: wasCached,
+                timestamp: new Date().toISOString()
+            });
+
+            if (wasCached) {
+                this.metrics.cacheHits++;
+            } else {
+                this.metrics.cacheMisses++;
+            }
+
+            // Save to localStorage (keep last 100 entries)
+            if (this.metrics.requests.length > 100) {
+                this.metrics.requests = this.metrics.requests.slice(-100);
+            }
+            localStorage.setItem(PERF_KEY, JSON.stringify(this.metrics));
+
+            return response;
+        } catch (error) {
+            // Record error
+            this.metrics.requests.push({
+                url,
+                status: 'error',
+                error: error.message,
+                timestamp: new Date().toISOString()
+            });
+            localStorage.setItem(PERF_KEY, JSON.stringify(this.metrics));
+            throw error;
+        }
+    }
+
+    // ======================================== GET STATISTICS
+    getStats() {
+        const durations = this.metrics.requests
+            .map(r => r.duration)
+            .filter(d => d);
+
+        return {
+            totalRequests: this.metrics.requests.length,
+            cacheHitRate: (this.metrics.cacheHits /
+                (this.metrics.cacheHits + this.metrics.cacheMisses) * 100).toFixed(2),
+            averageResponseTime: (durations.reduce((a, b) => a + b, 0) /
+                durations.length).toFixed(2),
+            errors: this.metrics.requests.filter(r => r.status === 'error').length
+        };
+    }
+}
+
+// ======================================== USAGE
+const perfMonitor = new PerformanceMonitor();
+
+// Use instead of regular fetch
+async function getUsers() {
+    const response = await perfMonitor.trackedFetch('/api/users');
+    return response.json();
+}
+
+// View statistics
+console.log('Performance Stats:', perfMonitor.getStats());
+</code></pre>
+        </div>
+
+        <details>
+            <summary>📄 View Full Performance Monitor (with percentile calculations and detailed metrics)</summary>
+
+            <div class="code-block">
+                <div class="code-header">
+                    <span>JavaScript - Complete Performance Monitoring System</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'storage-d6')">Copy</button>
+                </div>
+                <pre class="line-numbers"><code id="storage-d6"
+                      class="language-javascript"
+                      data-type="performance"
+                      data-description="Production-ready performance monitoring with detailed metrics, percentiles, and localStorage persistence">// Performance Tracker - Monitor API response times
 const PERF_KEY = 'day6_performance_metrics';
 const MAX_SAMPLES = 100;
 
+// ======================================== PERFORMANCE MONITOR CLASS
 class PerformanceMonitor {
     constructor() {
         this.metrics = this.loadMetrics();
     }
 
+    // ======================================== LOAD METRICS
+    // Restore metrics from localStorage on initialization
     loadMetrics() {
         const data = localStorage.getItem(PERF_KEY);
         return data ? JSON.parse(data) : {
@@ -368,20 +708,24 @@ class PerformanceMonitor {
         };
     }
 
+    // ======================================== SAVE METRICS
+    // Persist metrics to localStorage with size limit
     saveMetrics() {
-        // Keep only last 100 requests
+        // Keep only last 100 requests to prevent storage bloat
         if (this.metrics.requests.length > MAX_SAMPLES) {
             this.metrics.requests = this.metrics.requests.slice(-MAX_SAMPLES);
         }
         localStorage.setItem(PERF_KEY, JSON.stringify(this.metrics));
     }
 
-    // Wrap fetch to track performance
+    // ======================================== TRACKED FETCH
+    // Wrap fetch to automatically measure and record performance
     async trackedFetch(url, options = {}) {
         const startTime = performance.now();
         const startMark = `fetch-start-${Date.now()}`;
         const endMark = `fetch-end-${Date.now()}`;
 
+        // Use Performance API marks for detailed profiling
         performance.mark(startMark);
 
         try {
@@ -389,10 +733,12 @@ class PerformanceMonitor {
             performance.mark(endMark);
 
             const duration = performance.now() - startTime;
+
+            // Detect if response came from cache
             const wasCached = response.headers.get('X-Cache') === 'HIT' ||
                             response.status === 304;
 
-            // Track metrics
+            // Track detailed request metrics
             this.recordRequest({
                 url,
                 method: options.method || 'GET',
@@ -403,6 +749,7 @@ class PerformanceMonitor {
                 size: response.headers.get('Content-Length')
             });
 
+            // Update cache statistics
             if (wasCached) {
                 this.metrics.cacheHits++;
             } else {
@@ -416,6 +763,7 @@ class PerformanceMonitor {
             performance.mark(endMark);
             const duration = performance.now() - startTime;
 
+            // Record failed request
             this.recordRequest({
                 url,
                 method: options.method || 'GET',
@@ -430,11 +778,13 @@ class PerformanceMonitor {
         }
     }
 
+    // ======================================== RECORD REQUEST
     recordRequest(data) {
         this.metrics.requests.push(data);
     }
 
-    // Get performance statistics
+    // ======================================== CALCULATE STATISTICS
+    // Generate comprehensive performance statistics
     getStats() {
         const requests = this.metrics.requests;
         const durations = requests.map(r => r.duration).filter(d => d);
@@ -444,31 +794,34 @@ class PerformanceMonitor {
             cacheHitRate: this.metrics.cacheHits /
                 (this.metrics.cacheHits + this.metrics.cacheMisses) * 100,
             averageResponseTime: durations.reduce((a, b) => a + b, 0) / durations.length,
-            p95: this.percentile(durations, 95),
-            p99: this.percentile(durations, 99),
+            p95: this.percentile(durations, 95), // 95th percentile
+            p99: this.percentile(durations, 99), // 99th percentile
             slowestRequests: requests
                 .sort((a, b) => b.duration - a.duration)
-                .slice(0, 5),
+                .slice(0, 5), // Top 5 slowest requests
             errors: requests.filter(r => r.status === 'error').length
         };
 
         return stats;
     }
 
+    // ======================================== PERCENTILE CALCULATION
+    // Calculate percentile (e.g., p95, p99) for response times
     percentile(arr, p) {
         const sorted = [...arr].sort((a, b) => a - b);
         const index = Math.ceil((p / 100) * sorted.length) - 1;
         return sorted[index];
     }
 
-    // Clear metrics
+    // ======================================== RESET METRICS
+    // Clear all stored metrics
     reset() {
         this.metrics = { requests: [], cacheHits: 0, cacheMisses: 0 };
         localStorage.removeItem(PERF_KEY);
     }
 }
 
-// Usage
+// ======================================== USAGE EXAMPLE
 const perfMonitor = new PerformanceMonitor();
 
 // Use instead of regular fetch
@@ -477,11 +830,12 @@ async function getUsers() {
     return response.json();
 }
 
-// View statistics
+// View detailed statistics
 console.log('Performance Stats:', perfMonitor.getStats());
-console.table(perfMonitor.metrics.requests.slice(-10));
+console.table(perfMonitor.metrics.requests.slice(-10)); // Last 10 requests
 </code></pre>
-        </div>
+            </div>
+        </details>
     </div>
 
     <div class="exercise">
@@ -503,12 +857,18 @@ console.table(perfMonitor.metrics.requests.slice(-10));
 
         <details>
             <summary>✅ Solution</summary>
+            <p><strong>Description:</strong> Complete multi-layer caching solution combining Redis server-side caching with ETag client-side validation. Includes automatic cache invalidation on mutations and comprehensive Cache-Control headers.</p>
+
+            <!-- SIMPLIFIED SOLUTION -->
             <div class="code-block">
                 <div class="code-header">
-                    <span>JavaScript - Multi-Layer Caching Solution</span>
-                    <button class="copy-btn" onclick="copyCode(this, 'solution-d6')">Copy</button>
+                    <span>JavaScript - Multi-Layer Caching (Simplified)</span>
+                    <button class="copy-btn" onclick="copyCode(this, 'solution-d6-simple')">Copy</button>
                 </div>
-                <pre><code id="solution-d6">const express = require('express');
+                <pre><code id="solution-d6-simple"
+                      class="language-javascript"
+                      data-type="performance"
+                      data-description="Essential multi-layer caching with Redis and ETag support">const express = require('express');
 const redis = require('redis');
 const crypto = require('crypto');
 const app = express();
@@ -517,102 +877,69 @@ app.use(express.json());
 const redisClient = redis.createClient();
 redisClient.connect();
 
-let products = [
-    { id: 1, name: 'Laptop', price: 999, lastModified: Date.now() }
-];
+let products = [{ id: 1, name: 'Laptop', price: 999 }];
 
-// Combined caching middleware
+// ======================================== MULTI-LAYER CACHE MIDDLEWARE
 const multiLayerCache = (duration) => {
     return async (req, res, next) => {
         const cacheKey = `cache:${req.originalUrl}`;
 
-        // Layer 1: Redis cache
-        try {
-            const cached = await redisClient.get(cacheKey);
-            if (cached) {
-                const data = JSON.parse(cached);
-                const etag = crypto.createHash('md5').update(cached).digest('hex');
+        // Layer 1: Check Redis cache
+        const cached = await redisClient.get(cacheKey);
+        if (cached) {
+            const etag = crypto.createHash('md5').update(cached).digest('hex');
+            res.set('ETag', etag);
+            res.set('X-Cache', 'HIT');
 
-                res.set('ETag', etag);
-                res.set('X-Cache', 'HIT');
-                res.set('Cache-Control', `public, max-age=${duration}`);
-
-                // Layer 2: ETag validation
-                if (req.headers['if-none-match'] === etag) {
-                    return res.status(304).end();
-                }
-
-                return res.json(data);
+            // Layer 2: ETag validation
+            if (req.headers['if-none-match'] === etag) {
+                return res.status(304).end(); // Not Modified
             }
-        } catch (error) {
-            console.error('Redis error:', error);
+
+            return res.json(JSON.parse(cached));
         }
 
-        // Cache miss - intercept response
+        // Cache miss - store response
         const originalJson = res.json.bind(res);
         res.json = (data) => {
             const content = JSON.stringify(data);
-            const etag = crypto.createHash('md5').update(content).digest('hex');
-
-            // Store in Redis
             redisClient.setEx(cacheKey, duration, content);
-
-            // Set headers
-            res.set('ETag', etag);
             res.set('X-Cache', 'MISS');
-            res.set('Cache-Control', `public, max-age=${duration}`);
-
             originalJson(data);
         };
-
         next();
     };
 };
 
-// Invalidate cache helper
+// ======================================== CACHE INVALIDATION
 const invalidateCache = async (pattern = 'cache:*') => {
     const keys = await redisClient.keys(pattern);
-    if (keys.length > 0) {
-        await redisClient.del(keys);
-    }
-    console.log(`Invalidated ${keys.length} cache entries`);
+    if (keys.length > 0) await redisClient.del(keys);
 };
 
-// GET - with caching
+// ======================================== ROUTES
+// GET - with 5-minute cache
 app.get('/api/products', multiLayerCache(300), (req, res) => {
-    res.json({
-        products,
-        timestamp: new Date().toISOString()
-    });
+    res.json({ products, timestamp: new Date().toISOString() });
 });
 
 // POST - invalidate cache
 app.post('/api/products', async (req, res) => {
-    const newProduct = {
-        id: products.length + 1,
-        ...req.body,
-        lastModified: Date.now()
-    };
-    products.push(newProduct);
-
+    products.push({ id: products.length + 1, ...req.body });
     await invalidateCache('cache:/api/products*');
-
-    res.status(201).json(newProduct);
+    res.status(201).json({ message: 'Created' });
 });
 
 // PUT - invalidate cache
 app.put('/api/products/:id', async (req, res) => {
-    const id = parseInt(req.params.id);
-    const index = products.findIndex(p => p.id === id);
-
-    if (index === -1) {
-        return res.status(404).json({ error: 'Not found' });
+    const index = products.findIndex(p => p.id === parseInt(req.params.id));
+    if (index !== -1) {
+        products[index] = { ...products[index], ...req.body };
+        await invalidateCache('cache:/api/products*');
+        res.json(products[index]);
+    } else {
+        res.status(404).json({ error: 'Not found' });
     }
-
-    products[index] = { ...products[index], ...req.body, lastModified: Date.now() };
-    await invalidateCache('cache:/api/products*');
-
-    res.json(products[index]);
 });
 
 // DELETE - invalidate cache
@@ -625,6 +952,155 @@ app.delete('/api/products/:id', async (req, res) => {
 app.listen(3000);
 </code></pre>
             </div>
+
+            <details>
+                <summary>📄 View Complete Multi-Layer Caching Solution (with full error handling)</summary>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>JavaScript - Production Multi-Layer Caching</span>
+                        <button class="copy-btn" onclick="copyCode(this, 'solution-d6')">Copy</button>
+                    </div>
+                    <pre class="line-numbers"><code id="solution-d6"
+                          class="language-javascript"
+                          data-type="performance"
+                          data-description="Complete multi-layer caching with Redis, ETags, error handling, and cache invalidation">const express = require('express');
+const redis = require('redis');
+const crypto = require('crypto');
+const app = express();
+app.use(express.json());
+
+// ======================================== REDIS SETUP
+const redisClient = redis.createClient();
+redisClient.connect();
+
+// ======================================== DATA STORE
+let products = [
+    { id: 1, name: 'Laptop', price: 999, lastModified: Date.now() }
+];
+
+// ======================================== MULTI-LAYER CACHE MIDDLEWARE
+// Combines Redis server-side cache with ETag client-side validation
+const multiLayerCache = (duration) => {
+    return async (req, res, next) => {
+        const cacheKey = `cache:${req.originalUrl}`;
+
+        // ======================================== LAYER 1: REDIS CACHE
+        try {
+            const cached = await redisClient.get(cacheKey);
+            if (cached) {
+                const data = JSON.parse(cached);
+                const etag = crypto.createHash('md5').update(cached).digest('hex');
+
+                // Set cache headers
+                res.set('ETag', etag);
+                res.set('X-Cache', 'HIT'); // Indicate cache hit
+                res.set('Cache-Control', `public, max-age=${duration}`);
+
+                // ======================================== LAYER 2: ETAG VALIDATION
+                // Check if client's cached version is still valid
+                if (req.headers['if-none-match'] === etag) {
+                    return res.status(304).end(); // Not Modified
+                }
+
+                return res.json(data);
+            }
+        } catch (error) {
+            console.error('Redis error:', error);
+            // Continue without cache on Redis error
+        }
+
+        // ======================================== CACHE MISS HANDLING
+        // Intercept response to store in cache
+        const originalJson = res.json.bind(res);
+        res.json = (data) => {
+            const content = JSON.stringify(data);
+            const etag = crypto.createHash('md5').update(content).digest('hex');
+
+            // Store in Redis with automatic expiration
+            redisClient.setEx(cacheKey, duration, content);
+
+            // Set response headers
+            res.set('ETag', etag);
+            res.set('X-Cache', 'MISS'); // Indicate cache miss
+            res.set('Cache-Control', `public, max-age=${duration}`);
+
+            originalJson(data);
+        };
+
+        next();
+    };
+};
+
+// ======================================== CACHE INVALIDATION HELPER
+// Clear cache entries matching a pattern
+const invalidateCache = async (pattern = 'cache:*') => {
+    const keys = await redisClient.keys(pattern);
+    if (keys.length > 0) {
+        await redisClient.del(keys);
+    }
+    console.log(`Invalidated ${keys.length} cache entries`);
+};
+
+// ======================================== GET ROUTE (CACHED)
+// Retrieve products with 5-minute cache (300 seconds)
+app.get('/api/products', multiLayerCache(300), (req, res) => {
+    res.json({
+        products,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// ======================================== POST ROUTE (INVALIDATE)
+// Create new product and invalidate cache
+app.post('/api/products', async (req, res) => {
+    const newProduct = {
+        id: products.length + 1,
+        ...req.body,
+        lastModified: Date.now()
+    };
+    products.push(newProduct);
+
+    // Clear all product cache entries
+    await invalidateCache('cache:/api/products*');
+
+    res.status(201).json(newProduct);
+});
+
+// ======================================== PUT ROUTE (INVALIDATE)
+// Update product and invalidate cache
+app.put('/api/products/:id', async (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = products.findIndex(p => p.id === id);
+
+    if (index === -1) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+
+    // Update product with new lastModified timestamp
+    products[index] = { ...products[index], ...req.body, lastModified: Date.now() };
+
+    // Clear cache after update
+    await invalidateCache('cache:/api/products*');
+
+    res.json(products[index]);
+});
+
+// ======================================== DELETE ROUTE (INVALIDATE)
+// Delete product and invalidate cache
+app.delete('/api/products/:id', async (req, res) => {
+    products = products.filter(p => p.id !== parseInt(req.params.id));
+
+    // Clear cache after deletion
+    await invalidateCache('cache:/api/products*');
+
+    res.status(204).send();
+});
+
+app.listen(3000);
+</code></pre>
+                </div>
+            </details>
         </details>
     </div>
 
