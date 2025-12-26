@@ -3,7 +3,26 @@
     "allow": [
       "Bash(mkdir:*)",
       "Bash(node build/build.js:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "WebFetch(domain:unpkg.com)",
+      "Bash(curl:*)",
+      "Bash(node build.js:*)",
+      "Bash(start dist/restful-api-design-7day-module.html)",
+      "Bash(node -c:*)",
+      "Bash(start \"d:\\\\Ai-lessons\\\\7day-modules\\\\restful-api-design\\\\dist\\\\restful-api-design-7day-module.html\")",
+      "Bash(node -e:*)",
+      "Bash(node check-tags.js:*)",
+      "Bash(node find-structure.js:*)",
+      "Bash(node fix-tags.js:*)",
+      "Bash(node check-ids.js:*)",
+      "Bash(del check-tags.js find-structure.js fix-tags.js check-ids.js)",
+      "Bash(node check-divs.js:*)",
+      "Bash(del check-divs.js)",
+      "Bash(where:*)"
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "input=$(cat); cwd=$(echo \"$input\" | jq -r '.workspace.current_dir'); model=$(echo \"$input\" | jq -r '.model.display_name'); branch=$(cd \"$cwd\" 2>/dev/null && git rev-parse --abbrev-ref HEAD 2>/dev/null || echo ''); usage=$(echo \"$input\" | jq '.context_window.current_usage'); if [ \"$usage\" != \"null\" ]; then current=$(echo \"$usage\" | jq '.input_tokens + .cache_creation_input_tokens + .cache_read_input_tokens'); size=$(echo \"$input\" | jq '.context_window.context_window_size'); pct=$((current * 100 / size)); context_info=$(printf ' [%d%% ctx]' \"$pct\"); else context_info=''; fi; if [ -n \"$branch\" ]; then printf '%s (%s) [%s]%s' \"$(basename \"$cwd\")\" \"$model\" \"$branch\" \"$context_info\"; else printf '%s (%s)%s' \"$(basename \"$cwd\")\" \"$model\" \"$context_info\"; fi"
   }
 }

@@ -154,6 +154,90 @@ When enhancing code blocks in `src/content/dayN.html` files:
 - Provide inline comments explaining key concepts
 - Consider simplified + full versions for complex examples (15+ lines)
 
+**Note:** For the complete code block enhancement initiative, including the 10-task checklist and parallel development workflow, see the [Code Block Enhancement Initiative](#code-block-enhancement-initiative) section below.
+
+## Code Block Enhancement Initiative
+
+This section documents an ongoing initiative to enhance code blocks across all 7 days of the course with improved syntax highlighting, progressive disclosure, and consistent documentation patterns.
+
+### Enhancement Checklist (10 Tasks)
+
+**Phase 1: Prism Integration (Tasks 1-3)**
+1. **Vendor Prism offline** - Add Prism core + line-numbers plugin + languages (JS/JSON/Bash/YAML) to `src/scripts/`, update `build/build.js` so Prism loads before `src/scripts/code-blocks.js`
+2. **Add Prism CSS** - Include Prism theme + line-numbers CSS in `src/styles/` with softer colors for light mode
+3. **Fix Prism initialization** - Update `src/scripts/code-blocks.js` for proper highlighting when `language-*` is on `<code>` and line numbers work with `pre.line-numbers`
+
+**Phase 2: Day-by-Day Content Enhancement (Tasks 4-10)**
+4. **Day 1** (`src/content/day1.html`) - REST Fundamentals: HTTP verbs, status codes, resource naming
+5. **Day 2** (`src/content/day2.html`) - Resource Design: URL patterns, nested resources, filtering
+6. **Day 3** (`src/content/day3.html`) - Error Handling: Error classes, middleware, logging patterns
+7. **Day 4** (`src/content/day4.html`) - Authentication: JWT, OAuth, role-based access (see `archive/day4-enhancements/` for reference implementation)
+8. **Day 5** (`src/content/day5.html`) - API Versioning: Version routing, cache headers, ETags
+9. **Day 6** (`src/content/day6.html`) - Performance: Pagination, rate limiting, compression
+10. **Day 7** (`src/content/day7.html`) - Testing & CI/CD: Test patterns, YAML highlighting, workflows, then run `npm run build` and verify `dist/` output
+
+**Each day task includes:**
+- Add 1-2 sentence descriptions above code examples
+- Add `class="language-*"`, `data-type`, and `data-description` attributes
+- Progressive disclosure for 15-20+ line blocks (Simple snippet + `<details>` full code)
+- Section separators (`// ========================================`) and inline comments
+
+**Reference:** See `taskmaster.md` for detailed per-day agent prompts and acceptance criteria.
+
+### Parallel Development Workflow
+
+This project supports **parallel agent-based development** where 7 agents can simultaneously enhance different day files without merge conflicts.
+
+**File Isolation Strategy:**
+- Each agent assigned to ONE day file only (`src/content/dayN.html`)
+- No cross-file dependencies during enhancement phase
+- Shared styles/scripts in `src/styles/` and `src/scripts/` remain unchanged during day enhancements
+
+**Shared Enhancement Patterns:**
+
+1. **Progressive Disclosure** (for blocks >15-20 lines)
+   - Show Simple snippet first (with ID suffix `-simple`)
+   - Wrap full code in `<details class="code-details"><summary>Show full code</summary></details>`
+   - Split large examples into logical chunks inside `<details>`
+   - Use `<pre class="line-numbers">` for full implementations
+
+2. **Code Block Standardization**
+   - Add `class="language-{javascript|json|bash|yaml}"`
+   - Add `data-type="{category}"` (e.g., "authentication", "error-handling", "performance")
+   - Add `data-description="detailed explanation"`
+   - Preserve existing code block IDs for copy button compatibility
+
+3. **Documentation Enhancement**
+   - Add 1-2 sentence description above each code example
+   - Include separators: `// ========================================`
+   - Add inline comments for complex sections
+   - Split very large examples into smaller logical chunks
+
+**Benefits:**
+- Zero merge conflicts (one file per agent)
+- Consistent patterns across all days
+- Maintainable enhancements with clear structure
+- Easy to review day-by-day progress
+
+### Agent Assignment Reference
+
+| Day | File | Focus Area | Key Enhancement Patterns |
+|-----|------|------------|-------------------------|
+| 1 | `src/content/day1.html` | REST Fundamentals | HTTP verbs, status codes, resource naming |
+| 2 | `src/content/day2.html` | Resource Design | URL patterns, nested resources, filtering |
+| 3 | `src/content/day3.html` | Error Handling | Error classes, middleware, logging patterns |
+| 4 | `src/content/day4.html` | Authentication | JWT, OAuth, role-based access (see archive) |
+| 5 | `src/content/day5.html` | Versioning & Caching | Version routing, cache headers, ETags |
+| 6 | `src/content/day6.html` | Performance | Pagination, rate limiting, compression |
+| 7 | `src/content/day7.html` | Testing & CI/CD | Test patterns, YAML highlighting, workflows |
+
+**Day 4 Reference Implementation:** Complete enhancement package available in `archive/day4-enhancements/` with:
+- `day4-enhanced-code-blocks.html` - Ready-to-insert enhanced code
+- `DAY4-INTEGRATION-GUIDE.md` - Step-by-step integration instructions
+- `DAY4-PREVIEW.html` - Browser preview of enhancements
+
+**Detailed Agent Prompts:** See `taskmaster.md` for specific constraints, objectives, and definition of done for each day.
+
 ### Adding New Days
 
 To add Day 8 (or beyond):
