@@ -67,5 +67,74 @@ function showDay(dayNum) {
         updateActiveNav();
         updateProgress();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Close sidebar on mobile after selecting a day
+        closeSidebar();
     }
 }
+
+// ============================================================
+// MOBILE SIDEBAR TOGGLE
+// Handles opening/closing sidebar on mobile devices
+// ============================================================
+
+/**
+ * Toggle the mobile sidebar open/closed
+ */
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    const toggle = document.querySelector('.sidebar-toggle');
+
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('active');
+    toggle.classList.toggle('active');
+
+    // Prevent body scroll when sidebar is open
+    document.body.style.overflow = sidebar.classList.contains('open') ? 'hidden' : '';
+}
+
+/**
+ * Close the mobile sidebar
+ */
+function closeSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    const toggle = document.querySelector('.sidebar-toggle');
+
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+    toggle.classList.remove('active');
+
+    // Restore body scroll
+    document.body.style.overflow = '';
+}
+
+/**
+ * Open the mobile sidebar
+ */
+function openSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    const toggle = document.querySelector('.sidebar-toggle');
+
+    sidebar.classList.add('open');
+    overlay.classList.add('active');
+    toggle.classList.add('active');
+
+    // Prevent body scroll when sidebar is open
+    document.body.style.overflow = 'hidden';
+}
+
+// Close sidebar on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeSidebar();
+    }
+});
+
+// Close sidebar when window is resized above mobile breakpoint
+window.addEventListener('resize', function() {
+    if (window.innerWidth > 768) {
+        closeSidebar();
+    }
+});
