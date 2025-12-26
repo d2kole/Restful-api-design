@@ -7,6 +7,7 @@
 .container {
     display: flex;
     min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
 }
 
 /* ----------------------------------------
@@ -19,6 +20,7 @@
     border-right: 1px solid var(--border);
     position: fixed;
     height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
     overflow-y: auto;
     z-index: 100;
 }
@@ -50,6 +52,7 @@
     padding: 40px 50px;
     max-width: 1000px;
     min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
     /* Removed overflow-x: hidden - let code blocks scroll independently */
 }
 
@@ -205,13 +208,184 @@
         flex-direction: column;
     }
 
+    /* Mobile sidebar - slide-in from left */
     .sidebar {
-        width: 100%;
-        height: auto;
-        position: relative;
+        width: 280px;
+        height: 100vh;
+        height: 100dvh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+        box-shadow: none;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Sidebar overlay when open */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+        opacity: 1;
     }
 
     .main {
         margin-left: 0;
+        padding: 20px 15px;
     }
+
+    /* Mobile header adjustments */
+    .header {
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .header h1 {
+        font-size: 20px;
+        order: 2;
+        width: 100%;
+    }
+
+    .header-controls {
+        order: 1;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    /* Mobile menu toggle button */
+    .sidebar-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        background-color: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 20px;
+        transition: all 0.2s;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .sidebar-toggle:hover,
+    .sidebar-toggle:focus {
+        background-color: var(--accent-hover);
+        outline: none;
+    }
+
+    .sidebar-toggle:active {
+        transform: scale(0.95);
+    }
+
+    /* Hamburger icon */
+    .sidebar-toggle span {
+        display: block;
+        width: 22px;
+        height: 2px;
+        background-color: white;
+        position: relative;
+        transition: background-color 0.2s;
+    }
+
+    .sidebar-toggle span::before,
+    .sidebar-toggle span::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        width: 22px;
+        height: 2px;
+        background-color: white;
+        transition: transform 0.3s ease;
+    }
+
+    .sidebar-toggle span::before {
+        top: -7px;
+    }
+
+    .sidebar-toggle span::after {
+        top: 7px;
+    }
+
+    /* Animate hamburger to X when sidebar open */
+    .sidebar-toggle.active span {
+        background-color: transparent;
+    }
+
+    .sidebar-toggle.active span::before {
+        transform: rotate(45deg);
+        top: 0;
+    }
+
+    .sidebar-toggle.active span::after {
+        transform: rotate(-45deg);
+        top: 0;
+    }
+
+    /* Close button inside sidebar for mobile */
+    .sidebar-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        width: 36px;
+        height: 36px;
+        background-color: var(--bg-tertiary);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 24px;
+        color: var(--text-secondary);
+        transition: all 0.2s;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .sidebar-close:hover,
+    .sidebar-close:focus {
+        background-color: var(--error);
+        color: white;
+        outline: none;
+    }
+
+    /* Nav container scrolling */
+    #nav-container {
+        max-height: calc(100dvh - 180px);
+        max-height: calc(100vh - 180px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-right: 5px;
+    }
+
+    /* Improve touch targets for nav items on mobile */
+    .nav-item {
+        padding: 16px 18px;
+        min-height: 48px;
+    }
+}
+
+/* Hide toggle/close buttons on desktop */
+.sidebar-toggle,
+.sidebar-close,
+.sidebar-overlay {
+    display: none;
 }

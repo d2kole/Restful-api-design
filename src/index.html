@@ -9,8 +9,12 @@
     </style>
 </head>
 <body>
+    <!-- Mobile sidebar overlay -->
+    <div class="sidebar-overlay" onclick="closeSidebar()"></div>
+
     <div class="container">
         <nav class="sidebar">
+            <button class="sidebar-close" onclick="closeSidebar()" aria-label="Close menu">&times;</button>
             <div class="sidebar-header">
                 <h2>RESTful API Design</h2>
                 <p>7-Day Learning Module</p>
@@ -22,6 +26,9 @@
             <header class="header">
                 <h1>RESTful API Design with Node.js</h1>
                 <div class="header-controls">
+                    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Open menu">
+                        <span></span>
+                    </button>
                     <button class="theme-toggle" onclick="toggleTheme()">Dark Mode</button>
                     <button class="reset-btn" onclick="resetProgress()">Reset</button>
                 </div>
