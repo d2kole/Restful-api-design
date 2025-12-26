@@ -313,6 +313,30 @@ app.listen(3000, () => console.log('Server running on port 3000'));
         </div>
     </details>
 
+    <p><strong>Example API Response:</strong></p>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JSON - GET /api/users Response</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d1-2-response')">Copy</button>
+        </div>
+        <pre><code id="code-d1-2-response"
+                  class="language-json"
+                  data-type="response"
+                  data-description="Example JSON response from GET /api/users endpoint">[
+  {
+    "id": 1,
+    "name": "Alice Johnson",
+    "email": "alice@example.com"
+  },
+  {
+    "id": 2,
+    "name": "Bob Smith",
+    "email": "bob@example.com"
+  }
+]
+</code></pre>
+    </div>
+
     <h4>3. Building an Actual API with Node.js HTTP Module</h4>
     <p>Understanding Node.js core <code>http</code> module helps you appreciate what frameworks like Express abstract away. This example builds a complete server with routing, template rendering, and an API endpoint from scratch.</p>
 

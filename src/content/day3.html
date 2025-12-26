@@ -124,6 +124,40 @@ module.exports = { ApiError, Errors };
         </div>
     </details>
 
+    <p><strong>Example Error Responses:</strong></p>
+    <div class="code-block">
+        <div class="code-header">
+            <span>JSON - Error Response Examples</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d3-1-error-json')">Copy</button>
+        </div>
+        <pre><code id="code-d3-1-error-json"
+                  class="language-json"
+                  data-type="error-response"
+                  data-description="Example JSON error responses with consistent structure">// 404 Not Found Response
+{
+  "error": {
+    "status": 404,
+    "message": "User not found",
+    "details": null,
+    "timestamp": "2025-12-26T10:30:00.000Z"
+  }
+}
+
+// 422 Validation Error Response
+{
+  "error": {
+    "status": 422,
+    "message": "Validation failed",
+    "details": {
+      "email": "Invalid email format",
+      "age": "Must be at least 18"
+    },
+    "timestamp": "2025-12-26T10:30:00.000Z"
+  }
+}
+</code></pre>
+    </div>
+
     <h4>2. Centralized Error Handling Middleware</h4>
     <p class="code-description">
         <strong>Problem solved:</strong> Catches all errors from routes in one place, ensuring consistent error responses and proper logging without duplicating code.

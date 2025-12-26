@@ -275,13 +275,26 @@ const checkDeprecation = (req, res, next) => {
 app.use(checkDeprecation);
 
 app.listen(3000, () => console.log('Header-versioned API running'));
-
-// Example usage:
-// curl -H "Accept-Version: 1.0" http://localhost:3000/api/users
-// curl -H "Accept-Version: 2.0" http://localhost:3000/api/users
 </code></pre>
         </div>
     </details>
+
+    <p><strong>Testing with curl:</strong></p>
+    <div class="code-block">
+        <div class="code-header">
+            <span>Bash - Testing Header Versioning</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d5-2-curl')">Copy</button>
+        </div>
+        <pre><code id="code-d5-2-curl"
+                  class="language-bash"
+                  data-type="testing"
+                  data-description="curl commands to test header-based API versioning"># Test with version 1.0
+curl -H "Accept-Version: 1.0" http://localhost:3000/api/users
+
+# Test with version 2.0
+curl -H "Accept-Version: 2.0" http://localhost:3000/api/users
+</code></pre>
+    </div>
 
     <h4>3. Content Negotiation Versioning</h4>
     <p>Use custom media types in the Accept header to specify API version. Follows REST principles by treating different versions as different resource representations.</p>
@@ -385,13 +398,26 @@ app.get('/api/users', (req, res) => {
 });
 
 app.listen(3000, () => console.log('Content negotiation API running'));
-
-// Example usage:
-// curl -H "Accept: application/vnd.myapi.v1+json" http://localhost:3000/api/users
-// curl -H "Accept: application/vnd.myapi.v2+json" http://localhost:3000/api/users
 </code></pre>
         </div>
     </details>
+
+    <p><strong>Testing with curl:</strong></p>
+    <div class="code-block">
+        <div class="code-header">
+            <span>Bash - Testing Content Negotiation</span>
+            <button class="copy-btn" onclick="copyCode(this, 'code-d5-3-curl')">Copy</button>
+        </div>
+        <pre><code id="code-d5-3-curl"
+                  class="language-bash"
+                  data-type="testing"
+                  data-description="curl commands to test content negotiation versioning"># Test with version 1 using custom media type
+curl -H "Accept: application/vnd.myapi.v1+json" http://localhost:3000/api/users
+
+# Test with version 2 using custom media type
+curl -H "Accept: application/vnd.myapi.v2+json" http://localhost:3000/api/users
+</code></pre>
+    </div>
 
     <div class="storage-demo">
         <h4>💾 localStorage Practical: API Version Manager</h4>
