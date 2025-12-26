@@ -30,9 +30,5 @@ DAY6-QUICK-REFERENCE.md
 DAY6-VERIFICATION.md
 TASK-1-PRISM-SETUP.md
 
-# Prism vendor files (if vendored separately)
-src/scripts/prism-core.js
-src/styles/prism.css
-
 # Windows artifacts
 nul

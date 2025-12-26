@@ -1,0 +1,263 @@
+/**
+ * Prism Theme for RESTful API Design Module
+ * Light mode: Soft Tomorrow-inspired colors
+ * Dark mode: Tomorrow Night theme
+ * Includes line-numbers plugin support
+ */
+
+/* ========================================
+   BASE STYLES (Light Mode)
+   ======================================== */
+
+code[class*="language-"],
+pre[class*="language-"] {
+	color: #4d4d4c;
+	background: none;
+	font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+	font-size: 0.95em;
+	text-align: left;
+	white-space: pre;
+	word-spacing: normal;
+	word-break: normal;
+	word-wrap: normal;
+	line-height: 1.6;
+
+	-moz-tab-size: 4;
+	-o-tab-size: 4;
+	tab-size: 4;
+
+	-webkit-hyphens: none;
+	-moz-hyphens: none;
+	-ms-hyphens: none;
+	hyphens: none;
+}
+
+/* Code blocks */
+pre[class*="language-"] {
+	padding: 1em;
+	margin: .5em 0;
+	overflow: auto;
+	border-radius: 0.3em;
+	background: #f5f5f5;
+}
+
+/* Inline code */
+:not(pre) > code[class*="language-"] {
+	padding: .1em .3em;
+	border-radius: .3em;
+	white-space: normal;
+	background: #f5f5f5;
+}
+
+/* ========================================
+   TOKEN COLORS (Light Mode - Tomorrow)
+   ======================================== */
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+	color: #8e908c;
+}
+
+.token.punctuation {
+	color: #4d4d4c;
+}
+
+.token.namespace {
+	opacity: .7;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+	color: #c82829;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+	color: #718c00;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+	color: #3e999f;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+	color: #8959a8;
+}
+
+.token.function,
+.token.class-name {
+	color: #eab700;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+	color: #f5871f;
+}
+
+.token.important,
+.token.bold {
+	font-weight: bold;
+}
+
+.token.italic {
+	font-style: italic;
+}
+
+.token.entity {
+	cursor: help;
+}
+
+/* ========================================
+   DARK MODE OVERRIDES
+   ======================================== */
+
+body.dark-mode code[class*="language-"],
+body.dark-mode pre[class*="language-"] {
+	color: #ccc;
+}
+
+body.dark-mode pre[class*="language-"] {
+	background: #2d2d2d;
+}
+
+body.dark-mode :not(pre) > code[class*="language-"] {
+	background: #2d2d2d;
+}
+
+body.dark-mode .token.comment,
+body.dark-mode .token.prolog,
+body.dark-mode .token.doctype,
+body.dark-mode .token.cdata {
+	color: #999;
+}
+
+body.dark-mode .token.punctuation {
+	color: #ccc;
+}
+
+body.dark-mode .token.property,
+body.dark-mode .token.tag,
+body.dark-mode .token.boolean,
+body.dark-mode .token.number,
+body.dark-mode .token.constant,
+body.dark-mode .token.symbol,
+body.dark-mode .token.deleted {
+	color: #f2777a;
+}
+
+body.dark-mode .token.selector,
+body.dark-mode .token.attr-name,
+body.dark-mode .token.string,
+body.dark-mode .token.char,
+body.dark-mode .token.builtin,
+body.dark-mode .token.inserted {
+	color: #99cc99;
+}
+
+body.dark-mode .token.operator,
+body.dark-mode .token.entity,
+body.dark-mode .token.url,
+body.dark-mode .language-css .token.string,
+body.dark-mode .style .token.string {
+	color: #66cccc;
+}
+
+body.dark-mode .token.atrule,
+body.dark-mode .token.attr-value,
+body.dark-mode .token.keyword {
+	color: #cc99cc;
+}
+
+body.dark-mode .token.function,
+body.dark-mode .token.class-name {
+	color: #ffcc66;
+}
+
+body.dark-mode .token.regex,
+body.dark-mode .token.important,
+body.dark-mode .token.variable {
+	color: #f99157;
+}
+
+/* ========================================
+   LINE NUMBERS PLUGIN
+   ======================================== */
+
+pre[class*="language-"].line-numbers {
+	position: relative;
+	padding-left: 3.8em;
+	counter-reset: linenumber;
+	overflow: visible;  /* Allow line numbers to show outside pre bounds */
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+/* Wrapper for scrollable code content */
+pre[class*="language-"].line-numbers > code {
+	position: relative;
+	white-space: inherit;
+	display: block;
+	overflow-x: auto;  /* Horizontal scroll on code content only */
+}
+
+.line-numbers .line-numbers-rows {
+	position: absolute;
+	pointer-events: none;
+	top: 0;
+	font-size: 100%;
+	left: -3.8em;
+	width: 3em;
+	letter-spacing: -1px;
+	border-right: 1px solid #999;
+	padding-top: 1em;  /* Match pre padding */
+
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.line-numbers-rows > span {
+	display: block;
+	counter-increment: linenumber;
+}
+
+.line-numbers-rows > span:before {
+	content: counter(linenumber);
+	color: #999;
+	display: block;
+	padding-right: 0.8em;
+	text-align: right;
+}
+
+/* Dark mode line numbers */
+body.dark-mode .line-numbers .line-numbers-rows {
+	border-right: 1px solid #555;
+}
+
+body.dark-mode .line-numbers-rows > span:before {
+	color: #666;
+}
+
+/* Ensure code blocks in .code-block container scroll properly */
+.code-block pre.line-numbers {
+	overflow-x: auto;
+}
