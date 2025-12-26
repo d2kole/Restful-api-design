@@ -36,7 +36,7 @@ const config = {
 
     // File processing order (dependency-aware)
     cssOrder: ['base.css', 'layout.css', 'components.css', 'themes.css', 'prism.css'],
-    jsOrder: ['prism-core.js', 'navigation.js', 'progress.js', 'code-blocks.js', 'quiz.js', 'main.js'],
+    jsOrder: ['prism-core.js', 'navigation.js', 'progress.js', 'code-blocks.js', 'quiz.js', 'search.js', 'main.js'],
 
     // Template placeholders
     placeholders: {
