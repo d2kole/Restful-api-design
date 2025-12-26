@@ -50,6 +50,7 @@
     padding: 40px 50px;
     max-width: 1000px;
     min-height: 100vh;
+    /* Removed overflow-x: hidden - let code blocks scroll independently */
 }
 
 /* Header */
@@ -126,6 +127,8 @@
 .day-content {
     display: none;
     animation: fadeIn 0.3s ease;
+    max-width: 100%;  /* Ensure content doesn't exceed container */
+    /* Removed overflow-x: hidden - let code blocks scroll independently */
 }
 
 @keyframes fadeIn {

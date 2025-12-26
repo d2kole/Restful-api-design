@@ -150,7 +150,9 @@
     position: relative;
     margin: 20px 0;
     border-radius: 10px;
-    overflow: hidden;
+    max-width: 100%;
+    box-sizing: border-box;
+    /* overflow: visible to allow line-numbers-rows negative positioning */
 }
 
 .code-header {
@@ -159,12 +161,19 @@
     align-items: center;
     background-color: #1a252f;
     padding: 12px 18px;
+    border-radius: 10px 10px 0 0;
 }
 
 .code-header span {
     color: #8b9fad;
     font-size: 13px;
     font-weight: 600;
+}
+
+/* Ensure code blocks within .code-block have proper border-radius */
+.code-block pre {
+    border-radius: 0 0 10px 10px;
+    margin: 0;
 }
 
 .copy-btn {
@@ -195,6 +204,8 @@ pre {
     margin: 0;
     font-size: 14px;
     line-height: 1.5;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 /* ----------------------------------------
@@ -275,6 +286,19 @@ details summary:hover {
 
 details[open] summary {
     margin-bottom: 15px;
+}
+
+/* Reduce padding for nested details elements */
+details details {
+    padding: 10px;
+    margin-top: 10px;
+    background-color: var(--bg-secondary);
+}
+
+/* Code blocks inside details should be width-constrained */
+details .code-block {
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 /* ----------------------------------------
