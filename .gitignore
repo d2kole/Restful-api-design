@@ -18,3 +18,21 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# MCP tool directories
+.playwright-mcp/
+.serena/
+
+# Enhancement/task documentation (generated)
+DAY4-ENHANCEMENT-VERIFICATION.md
+DAY6-ENHANCEMENT-SUMMARY.md
+DAY6-QUICK-REFERENCE.md
+DAY6-VERIFICATION.md
+TASK-1-PRISM-SETUP.md
+
+# Prism vendor files (if vendored separately)
+src/scripts/prism-core.js
+src/styles/prism.css
+
+# Windows artifacts
+nul
